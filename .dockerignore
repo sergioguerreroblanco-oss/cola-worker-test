@@ -1,0 +1,30 @@
+# Carpetas de build locales
+build
+out
+.vs
+
+# Control de versiones
+.git
+.gitignore
+
+# Archivos temporales de Visual Studio / Windows
+*.suo
+*.user
+*.ipch
+*.obj
+*.pdb
+*.idb
+*.aps
+*.ncb
+*.pch
+*.vspscc
+*_i.c
+*_p.c
+*_h.h
+*.ilk
+*.tmp
+*.log
+
+# Archivos del sistema
+Thumbs.db
+Desktop.ini
