@@ -12,6 +12,9 @@
 /* Libraries */
 
 #include <gtest/gtest.h>
+#include <thread>
+#include <chrono>
+#include <atomic>
 
 #include "cola.h"
 
