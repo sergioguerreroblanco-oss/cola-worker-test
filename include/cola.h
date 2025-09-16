@@ -2,7 +2,7 @@
  * @file        cola.h
  * @author      Sergio Guerrero Blanco <sergioguerreroblanco@hotmail.com>
  * @date        <2025-09-15>
- * @version     0.0.0
+ * @version     1.0.0
  *
  * @brief       Thread-safe bounded queue for integer values.
  *
@@ -22,7 +22,7 @@
 
 /* Libraries */
 
-#include <queue>
+#include <deque>
 #include <mutex>
 #include <condition_variable>
 #include <chrono>
@@ -31,17 +31,23 @@
 
 /* Class Cola */
 
-class Cola {
+class Cola 
+{
     /******************************************************************/
 
-    /* Private Constants */
+    /* Public Data Types */
 
-    private:
-
+    public:
         /**
-         * @brief Maximun size of the buffer.
+         * @brief Description of the different scenarios when 
+         * popping values from the buffer.
          */
-        const size_t max_size = 5;
+        enum class PopResult 
+        { 
+            OK, 
+            TIMEOUT,
+            SHUTDOWN
+        };
 
     /******************************************************************/
 
@@ -49,32 +55,58 @@ class Cola {
 
     public:
         /**
+         * @brief Constructor of the Cola class.
+         * @param max_size Maximum number of elements of the buffer, by default 5.
+         */
+        explicit Cola(size_t max_size = 5);
+
+        /**
+         * @brief Destructor of the Cola class.
+         */
+        ~Cola() = default;
+
+        /**
+         * @brief Disable copy and move semantics since Cola manages synchronization primitives
+         * (std::mutex, std::condition_variable) which are non-copyable and non-movable.
+         */
+        Cola(const Cola&) = delete;
+        Cola& operator=(const Cola&) = delete;
+        Cola(Cola&&) = delete;
+        Cola& operator=(Cola&&) = delete;
+
+        /**
+         * @brief Manages to stop using the Cola and notifies all the consumers.
+         */
+        void shutdown();
+        
+        /**
          * @brief Push the data into the buffer.
          * @param dato Number to introduce in the buffer.
          */
         void push(int dato);
 
         /**
-         * @brief Takes out of the buffer its eldest value .
+         * @brief Removes the oldest element from the buffer.
          * @param out Number retrieved from the buffer.
          * @param timeout Time given to retrieve data from the buffer.
-         * @return true Value succesfully retrieved from the buffer.
-         * @return false The buffer is empty and triggered a timeout.
+         * @return OK Value succesfully retrieved from the buffer.
+         * @return TIMEOUT The buffer is empty and triggered a timeout.
+         * @return SHUTDOWN The buffer is stopped.
          */
-        bool pop(int& out, std::chrono::seconds timeout);
+        PopResult pop(int& out, std::chrono::seconds timeout);
 
         /**
          * @brief Getter of the buffer's size.
          * @return Size of the buffer.
          */
-        int get_size(void);
+        size_t get_size(void) const;
 
         /**
          * @brief Indicates if the buffer is empty or not.
          * @return true The buffer is empty.
          * @return false The buffer is not empty.
          */
-        bool is_empty(void);
+        bool is_empty(void) const;
 
     /******************************************************************/
 
@@ -84,7 +116,7 @@ class Cola {
         /**
          * @brief FIFO buffer.
          */
-        std::queue<int> buffer;
+        std::deque<int> buffer;
 
         /**
          * @brief Mutex.
@@ -95,6 +127,16 @@ class Cola {
          * @brief Condition variable.
          */
         std::condition_variable cv;
+
+        /**
+         * @brief Maximum size of the buffer.
+         */
+        size_t max_size;
+
+        /**
+         * @brief Indicates if the Cola was stopped.
+         */
+        bool shutting_down;
 
     /******************************************************************/
 };
