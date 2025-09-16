@@ -53,6 +53,57 @@ flowchart LR
 
 ---
 
+## 🗂 Class Diagram
+
+```mermaid
+classDiagram
+    class Cola {
+        -deque<int> buffer
+        -mutex mtx
+        -condition_variable cv
+        -size_t max_size
+        -bool shutting_down
+        +Cola(size_t max_size = 5)
+        +Cola()/+Destructor()
+        +void push(int dato)
+        +PopResult pop(int& out, chrono::seconds timeout)
+        +void shutdown()
+        +size_t get_size() const
+        +bool is_empty() const
+    }
+
+    class Worker {
+        -Cola& cola
+        -string name
+        -thread thread
+        -atomic<bool> running
+        +Worker(Cola& c, string name="Worker")
+        +Worker()/+Destructor()
+        +void start()
+        +void stop()
+        -void run()
+        -void colaVacia() const
+        -void trabajo(int dato) const
+        -void colaApagada() const
+    }
+
+    class Logger {
+        -static mutex mtx
+        -static Level minLevel
+        +static void set_min_level(Level lvl)
+        +static void info(const string& msg)
+        +static void warn(const string& msg)
+        +static void error(const string& msg)
+        +static void log(Level lvl, const string& msg)
+    }
+
+    Cola <.. Worker : uses
+    Worker ..> Logger : logs to
+
+```
+
+---
+
 ## 🛠 Build Instructions
 
 ### Windows (Visual Studio 2022)
