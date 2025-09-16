@@ -11,7 +11,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 add_library(core STATIC
     src/cola.cpp
     src/worker.cpp
-)
+    src/logger.cpp)
 target_include_directories(core PUBLIC include)
 
 # Configuración de warnings por compilador
