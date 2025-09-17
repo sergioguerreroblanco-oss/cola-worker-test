@@ -4,13 +4,19 @@
  * @date        <2025-09-15>
  * @version     1.0.0
  *
- * @brief       Consumer entity that processes data from a Cola instance.
+ * @brief       Generic worker that consumes data from a Cola<T> instance.
  *
  * @details
- * The Worker repeatedly attempts to extract data from the queue
- * with a timeout. If data is available, it is "processed" (printed).
- * If the queue remains empty for the timeout duration, a warning
- * message is printed.
+ * The Worker class runs in its own thread and repeatedly attempts to
+ * extract data from a thread-safe queue (`Cola<T>`). For each retrieved
+ * element, or in case of timeout/shutdown, the Worker delegates the
+ * handling of events to a user-defined action (via the IWorkerAction<T>
+ * interface).
+ *
+ * This design decouples the worker’s concurrency logic from the specific
+ * behavior applied to each element, making it possible to plug in
+ * different actions (e.g., logging, processing, testing) without
+ * modifying the Worker itself.
  */
 
 /*****************************************************************************/
@@ -29,11 +35,13 @@
 #include <mutex>
 
 #include "cola.h"
+#include "IWorkerAction.h"
 
 /*****************************************************************************/
 
 /* Class Worker */
 
+template <typename T>
 class Worker {
     /******************************************************************/
     
@@ -56,7 +64,8 @@ class Worker {
          * @param cola The "cola" to get values from.
          * @param name The name of the worker, by default "Worker".
          */
-        explicit Worker(Cola& cola, std::string name = "Worker");
+        explicit Worker(Cola<T>& cola, IWorkerAction<T>& action, const std::string& name = "Worker");
+
 
         /**
          * @brief Destruct a Worker object.
@@ -92,23 +101,6 @@ class Worker {
          */
         void run();
 
-        /**
-         * @brief Prints a message indicating that the empty buffer was detected.
-         */
-        void colaVacia() const;
-
-        /**
-         * @brief Prints a message with the data of the buffer extracted.
-         * @param dato Data retrieved from the buffer.
-         */
-        void trabajo(int dato) const;
-
-        /**
-         * @brief Prints a message indicating that the worker has detected that
-         * the buffer was shut down.
-         */
-        void colaApagada() const;
-
     /******************************************************************/
 
     /* Private Attributes */
@@ -117,7 +109,12 @@ class Worker {
         /**
          * @brief Cola used by the worker.
          */
-        Cola& cola;
+        Cola<T>& cola;
+
+        /**
+         * @brief The worker action interface.
+         */
+        IWorkerAction<T>& action;
 
         /**
          * @brief Name of the worker.
@@ -136,3 +133,5 @@ class Worker {
 
     /******************************************************************/
 };
+
+#include "worker.ipp"

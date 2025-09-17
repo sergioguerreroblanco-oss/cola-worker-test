@@ -4,13 +4,17 @@
  * @date        <2025-09-15>
  * @version     1.0.0
  *
- * @brief       Thread-safe bounded queue for integer values.
+ * @brief       Thread-safe bounded queue template.
  *
  * @details
- * This class implements a producer-consumer buffer with a fixed
- * maximum size. When the buffer is full, the oldest element is
- * discarded. Synchronization is guaranteed through a mutex and
- * condition variable, making it safe to use across multiple threads.
+ * `Cola<T>` is a generic, thread-safe queue with a fixed maximum size.
+ * - Implements the producer-consumer pattern with synchronization 
+ *   using a mutex and condition variable.
+ * - When the queue reaches its maximum size, the oldest element is discarded.
+ * - Provides timeout-based retrieval (`pop`) and a shutdown mechanism 
+ *   to gracefully stop consumers.
+ *
+ * The class is safe for concurrent use by multiple producer and consumer threads.
  */
 
 /*****************************************************************************/
@@ -31,6 +35,7 @@
 
 /* Class Cola */
 
+template <typename T>
 class Cola 
 {
     /******************************************************************/
@@ -81,19 +86,19 @@ class Cola
         
         /**
          * @brief Push the data into the buffer.
-         * @param dato Number to introduce in the buffer.
+         * @param dato Data to introduce in the buffer.
          */
-        void push(int dato);
+        void push(T dato);
 
         /**
          * @brief Removes the oldest element from the buffer.
-         * @param out Number retrieved from the buffer.
+         * @param out Data retrieved from the buffer.
          * @param timeout Time given to retrieve data from the buffer.
          * @return OK Value succesfully retrieved from the buffer.
          * @return TIMEOUT The buffer is empty and triggered a timeout.
          * @return SHUTDOWN The buffer is stopped.
          */
-        PopResult pop(int& out, std::chrono::seconds timeout);
+        PopResult pop(T& out, std::chrono::seconds timeout);
 
         /**
          * @brief Getter of the buffer's size.
@@ -116,7 +121,7 @@ class Cola
         /**
          * @brief FIFO buffer.
          */
-        std::deque<int> buffer;
+        std::deque<T> buffer;
 
         /**
          * @brief Mutex.
@@ -140,3 +145,5 @@ class Cola
 
     /******************************************************************/
 };
+
+#include "cola.ipp"

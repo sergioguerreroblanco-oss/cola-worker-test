@@ -1,10 +1,10 @@
 ﻿/**
- * @file        cola.cpp
+ * @file        cola.ipp
  * @author      Sergio Guerrero Blanco <sergioguerreroblanco@hotmail.com>
  * @date        <2025-09-15>
  * @version     1.0.0
  *
- * @brief       Thread-safe bounded queue for integer values.
+ * @brief       Implementation file for the template class Cola<T>.
  */
 
 /*****************************************************************************/
@@ -18,10 +18,11 @@
 /* Public Methods */
 
 /**
- * @details Constructor of the Cola taking the maximum size 
- * of the internal buffer.
+ * @details Constructor of the Cola receiving the maximum size 
+ * for the buffer.
  */
-Cola::Cola(size_t max_size) 
+template <typename T>
+Cola<T>::Cola(size_t max_size) 
     : max_size(max_size),
     shutting_down(false)
 {}
@@ -29,7 +30,8 @@ Cola::Cola(size_t max_size)
 /**
 * @details Manages to stop using the Cola and notifies all the consumers.
 */
-void Cola::shutdown()
+template <typename T>
+void Cola<T>::shutdown()
 {
     std::unique_lock<std::mutex> lock(mtx);
     shutting_down = true;
@@ -38,15 +40,16 @@ void Cola::shutdown()
 }
 
 /**
- * @details Manages the addition of a new data value into the buffer
- * which could mean to delete the eldest data when the buffer is full.
+ * @details Manages the addition of a new "dato" into the buffer
+ * which could mean to delete the eldest "dato" when the buffer is full.
  */
-void Cola::push(int dato) 
+template <typename T>
+void Cola<T>::push(T dato) 
 {
     std::unique_lock<std::mutex> lock(mtx);
     if (buffer.size() >= max_size) 
     {
-        buffer.pop_front(); // Take out the eldest value
+        buffer.pop_front(); // Take out the eldest "dato"
     }
     buffer.push_back(dato);
     cv.notify_one(); // notify the waiting worker
@@ -56,7 +59,8 @@ void Cola::push(int dato)
  * @details Manages retrieval of data from the buffer but if the buffer
  * is empty waits for new data until a timeout is triggered.
  */
-Cola::PopResult Cola::pop(int& out, std::chrono::seconds timeout)
+template <typename T>
+typename Cola<T>::PopResult Cola<T>::pop(T& out, std::chrono::seconds timeout)
 {
     std::unique_lock<std::mutex> lock(mtx);
 
@@ -79,7 +83,8 @@ Cola::PopResult Cola::pop(int& out, std::chrono::seconds timeout)
 /**
  * @details Returns the size of the buffer.
  */
-size_t Cola::get_size(void) const
+template <typename T>
+size_t Cola<T>::get_size(void) const
 {
     std::lock_guard<std::mutex> lock(mtx);
     return buffer.size();
@@ -88,7 +93,8 @@ size_t Cola::get_size(void) const
 /**
  * @details Indicates if the buffer is empty or not.
  */
-bool Cola::is_empty(void) const
+template <typename T>
+bool Cola<T>::is_empty(void) const
 {
     std::lock_guard<std::mutex> lock(mtx);
     return buffer.empty();
