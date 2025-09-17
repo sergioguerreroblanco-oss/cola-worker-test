@@ -4,13 +4,22 @@
  * @date        <2025-09-15>
  * @version     1.0.0
  *
- * @brief        Main source file of the COLA-WORKER project.
+ * @brief        Entry point of the COLA-WORKER project.
  *
  * @details
- * Demonstrates the producer-consumer pattern using Cola and Worker.
- * A Worker is launched in a separate thread, while the main thread
- * pushes integer values into the queue. The Worker consumes them
- * asynchronously until the program terminates.
+ * This program demonstrates the producer-consumer pattern using:
+ *  - A thread-safe generic queue (`Cola<T>`) with bounded capacity.
+ *  - Multiple worker threads (`Worker<T>`) that process elements 
+ *    through an injected action (`IWorkerAction<T>` implementation).
+ *
+ * In this example:
+ *  - The main thread produces integer values at fixed intervals.
+ *  - Three worker threads consume and process the values concurrently.
+ *  - Processing is delegated to a `PrintWorkerAction`, which logs 
+ *    the results with timestamps and severity levels.
+ *
+ * The application illustrates thread synchronization, dependency 
+ * injection for worker behavior, and a clean shutdown procedure.
  */
 
  /*****************************************************************************/
@@ -19,8 +28,10 @@
 
 #include <thread>
 #include <chrono>
+#include <string>
 
 #include "cola.h"
+#include "PrintWorkerAction.h"
 #include "worker.h"
 #include "logger.h"
 
@@ -36,12 +47,17 @@ int main()
     constexpr int maxValues = 15;
     constexpr auto pushInterval = 200ms;
     constexpr auto mainSleep = 10s;
+    const std::string WORKER1_NAME = "Worker1";
+    const std::string WORKER2_NAME = "Worker2";
+    const std::string WORKER3_NAME = "Worker3";
 
-    Cola cola(maxQueueSize);
+    Cola<int> cola(maxQueueSize);
 
-    Worker worker1(cola, "Worker1");
-    Worker worker2(cola, "Worker2");
-    Worker worker3(cola, "Worker3");
+    PrintWorkerAction<int> action;
+
+    Worker<int> worker1(cola, action, WORKER1_NAME);
+    Worker<int> worker2(cola, action, WORKER2_NAME);
+    Worker<int> worker3(cola, action, WORKER3_NAME);
 
     worker1.start();
     worker2.start();

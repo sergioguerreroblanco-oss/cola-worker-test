@@ -1,33 +1,31 @@
 # Cola & Worker
 
-Cola & Worker is a C++ project that demonstrates a **producer–consumer pattern** with a bounded, thread-safe queue and multiple worker threads.  
-It has been designed as part of a technical test, but structured in a professional way, including **unit tests, logging, Docker support and CI/CD pipelines**.
+Cola & Worker is a C++ project that demonstrates a producer–consumer pattern with a bounded, thread-safe queue and multiple worker threads.
+It has been designed as part of a technical test, but structured in a professional way, including **templates, abstract interfaces, unit tests, logging, Docker support and CI/CD pipelines.**
 
 ---
 
 ## ✨ Features
 
-- **Thread-safe bounded queue** (`Cola`) with configurable maximum size (Default: 5 elements).   
-- **Multiple workers** (`Worker`) running in independent threads, consuming data concurrently.  
-- **Logger** utility for thread-safe logs with levels (INFO, WARN, ERROR).  
-- **Graceful shutdown** mechanism: workers wake up and exit cleanly.  
-- **Unit tests** with GoogleTest, integrated into CMake.  
-- **Reproducible builds** with Docker.  
-- **Continuous Integration** with GitHub Actions (build + test + Docker validation).  
+- **Thread-safe bounded queue** (```Cola<T>```) implemented as a C++14 template with configurable maximum size (Default: 5 elements).
+- **Multiple workers** (```Worker<T>```) running in independent threads, consuming data concurrently.
+- **Abstract interface** (```IWorkerAction```) to decouple worker logic from concrete actions.
+- **Concrete action** (```PrintWorkerAction```) that logs worker events.
+- **Logger** utility for thread-safe logs with levels (INFO, WARN, ERROR).
+- **Graceful shutdown mechanism**: workers wake up and exit cleanly.
+- **Unit tests** with GoogleTest, integrated into CMake.
+- **Reproducible builds** with Docker.
+- **Continuous Integration** with GitHub Actions (build + test + Docker validation).
 
 ---
 
 ## 🏗 Architecture
 The following diagram illustrates the internal architecture of the project.
-It follows a producer–consumer pattern where:
-
-The Main Thread simulates a producer pushing values into the queue at fixed intervals.
-
-The Cola is a thread-safe bounded queue that stores up to 5 elements and synchronizes access among threads.
-
-Three independent Worker Threads act as consumers, retrieving values from the queue concurrently.
-
-This design demonstrates multithreading, synchronization with mutex and condition variables, and safe communication between producers and multiple consumers.
+- **Main Thread** simulates a producer pushing values into the queue at fixed intervals.
+- **Cola<T>** is a thread-safe bounded queue that stores up to 5 elements and synchronizes access among threads.
+- **Worker<T>** consumes values from the queue and delegates the actual handling of events to an action (strategy pattern).
+- **IWorkerAction** defines the contract for worker actions.
+- **PrintWorkerAction** implements this contract by logging messages.
 ```mermaid
 flowchart LR
     subgraph Main [Main Thread]
@@ -35,19 +33,30 @@ flowchart LR
     end
 
     subgraph Cola [Thread-Safe Queue]
-        Q[(Cola - max 5 elements)]
+        Q[(Cola<T> - max 5 elements)]
     end
 
     subgraph Workers [Worker Threads]
-        W1[Worker1 - thread]
-        W2[Worker2 - thread]
-        W3[Worker3 - thread]
+        W1[Worker<T> - thread]
+        W2[Worker<T> - thread]
+        W3[Worker<T> - thread]
     end
 
-    P -->|push int| Q
-    Q -->|pop| W1
-    Q -->|pop| W2
-    Q -->|pop| W3
+    subgraph Actions [Worker Actions]
+        A1[IWorkerAction<T>]
+        A2[PrintWorkerAction<T>]
+    end
+
+    P -->|"push()"| Q
+    Q -->|"pop()"| W1
+    Q -->|"pop()"| W2
+    Q -->|"pop()"| W3
+
+    W1 --> A2
+    W2 --> A2
+    W3 --> A2
+    A2 -->|implements| A1
+
 
 ```
 
@@ -57,34 +66,45 @@ flowchart LR
 
 ```mermaid
 classDiagram
-    class Cola {
-        -deque<int> buffer
+    class Cola~T~ {
+        -deque<T> buffer
         -mutex mtx
         -condition_variable cv
         -size_t max_size
         -bool shutting_down
         +Cola(size_t max_size = 5)
-        +Cola()/+Destructor()
-        +void push(int dato)
-        +PopResult pop(int& out, chrono::seconds timeout)
+        +void push(T dato)
+        +PopResult pop(T& out, chrono::seconds timeout)
         +void shutdown()
         +size_t get_size() const
         +bool is_empty() const
     }
 
-    class Worker {
-        -Cola& cola
+    class Worker~T~ {
+        -Cola<T>& cola
         -string name
         -thread thread
         -atomic<bool> running
-        +Worker(Cola& c, string name="Worker")
-        +Worker()/+Destructor()
+        -IWorkerAction<T>* action
+        +Worker(Cola<T> c, IWorkerAction<T> a, string name="Worker")
         +void start()
         +void stop()
         -void run()
-        -void colaVacia() const
-        -void trabajo(int dato) const
-        -void colaApagada() const
+    }
+
+    class IWorkerAction~T~ {
+        <<interface>>
+        +void onWork(T dato)
+        +void onQueueEmpty(string workerName)
+        +void onShutdown(string workerName)
+        +void onStop(string workerName)
+    }
+
+    class PrintWorkerAction~T~ {
+        +void onWork(T dato)
+        +void onQueueEmpty(string workerName)
+        +void onShutdown(string workerName)
+        +void onStop(string workerName)
     }
 
     class Logger {
@@ -98,7 +118,10 @@ classDiagram
     }
 
     Cola <.. Worker : uses
-    Worker ..> Logger : logs to
+    Worker --> IWorkerAction : delegates
+    PrintWorkerAction ..|> IWorkerAction
+    PrintWorkerAction ..> Logger : logs to
+
 
 ```
 
@@ -138,8 +161,12 @@ cmake --build .
 
 ## 🧪 Unit Tests
 
-This project includes unit tests implemented with GoogleTest and integrated into the CMake build system via CTest.
-Tests validate the main behavior of the Cola (bounded queue) component, including maximum size enforcement, FIFO ordering, and shutdown behavior.
+Unit tests are implemented with GoogleTest and integrated into the CMake build system via CTest.
+They validate the main behavior of the queue (Cola<T>):
+- Maximum size enforcement.
+- FIFO ordering.
+- Timeout behavior.
+- Shutdown behavior.
 
 ### Running Tests (Linux / Docker)
 
@@ -192,13 +219,14 @@ Run main binary
 
 ## 🔄 Continuous Integration
 
-A GitHub Actions workflow (.github/workflows/ci.yml) is provided. It performs:
+A GitHub Actions workflow (```.github/workflows/ci.yml```) is provided. It performs:
+- Build and run unit tests on ```ubuntu-latest``` using CMake and g++.
+- Build Docker image and execute the binary/tests inside the container.
 
-Build and test on ubuntu-latest using CMake and g++.
-
-Build Docker image and run tests inside the container.
-
-This ensures the project is validated in both native and containerized environments.
+This ensures that:
+- The code always compiles on a clean environment.
+- All unit tests pass successfully on each push/pull request.
+- The project works both in native Linux and inside a reproducible Docker container.
 
 ---
 
@@ -207,45 +235,46 @@ This ensures the project is validated in both native and containerized environme
 ```
 cola-worker-test/
 │
-├── CMakeLists.txt           # Main build configuration
-├── Dockerfile               # Reproducible environment
-├── .dockerignore            # Files excluded from Docker context
-├── .gitignore               # Files excluded from Git
+├── CMakeLists.txt           # Build configuration
+├── Dockerfile               # Docker build context
+├── .dockerignore
+├── .gitignore
 ├── README.md                # Project documentation
 │
-├── include/                 # Public headers
+├── include/                 # Headers and template implementations
 │   ├── cola.h
+│   ├── cola.ipp
 │   ├── worker.h
+│   ├── worker.ipp
+│   ├── IWorkerAction.h
+│   ├── PrintWorkerAction.h
 │   └── logger.h
 │
-├── src/                     # Implementation files
+├── src/                     # Source files
 │   ├── main.cpp
-│   ├── cola.cpp
-│   ├── worker.cpp
 │   └── logger.cpp
 │
 ├── tests/                   # Unit tests
 │   └── test_main.cpp
 │
-└── .github/workflows/       # CI/CD
-    └── ci.yml
-
+└── .github/workflows/
+    └── ci.yml               # GitHub Actions CI/CD
 ```
 
 ---
 
 ## 📌 Notes
 
-C++ standard: project uses C++14 (set(CMAKE_CXX_STANDARD 14)).
-
-Thread safety: ensured with std::mutex, std::condition_variable, and std::atomic.
-
-Cross-platform: builds on Windows (MSVC), Linux (g++), and inside Docker.
-
-Extensibility: Cola can be generalized to a template Cola<T> for other data types.
+- C++ Standard: C++14 (set(CMAKE_CXX_STANDARD 14)).
+- Thread Safety: Managed with std::mutex, std::condition_variable, and std::atomic.
+- Extensibility: Queue and workers implemented as templates (Cola<T>, Worker<T>).
+- Interfaces: Worker behavior decoupled via IWorkerAction.
+- Logging: Centralized Logger utility with severity levels.
+- Cross-Platform: Builds on Windows (MSVC), Linux (g++) and Docker.
 
 ---
 
 ## ❤️ Acknowledgements
 
-This project was developed as a technical test and extended to include professional practices such as unit testing, CI/CD and containerization.
+This project was developed as a technical test and extended to include professional practices such as **templates, interfaces, logging, unit testing, CI/CD and containerization.**
+

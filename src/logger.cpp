@@ -92,6 +92,7 @@ std::string Logger::timestamp() {
 
 const char* Logger::levelToString(Level lvl) {
     switch (lvl) {
+    case Level::DBG:   return "DEBUG";
     case Level::INFO:  return "INFO";
     case Level::WARN:  return "WARN";
     case Level::ERROR: return "ERROR";

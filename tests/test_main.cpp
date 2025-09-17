@@ -31,13 +31,13 @@
  * The oldest element must be discarded automatically.
  */
 TEST(ColaTest, KeepMaxBufferSize) {
-    Cola cola;
+    Cola<int> cola;
     int extracted_value;
     for (int i = 0; i < 6; i++) {
         cola.push(i);
     }
     EXPECT_EQ(cola.get_size(), 5u);
-    EXPECT_EQ(cola.pop(extracted_value, std::chrono::seconds(5)), Cola::PopResult::OK);  // The first value (0) was deleted
+    EXPECT_EQ(cola.pop(extracted_value, std::chrono::seconds(5)), Cola<int>::PopResult::OK);  // The first value (0) was deleted
     EXPECT_EQ(extracted_value, 1);
 }
 
@@ -50,13 +50,13 @@ TEST(ColaTest, KeepMaxBufferSize) {
  * order. Afterwards, the queue must be empty.
  */
 TEST(ColaTest, ExtractElements) {
-    Cola cola;
+    Cola<int> cola;
     int extracted_value;
     cola.push(10);
     cola.push(20);
-    EXPECT_EQ(cola.pop(extracted_value, std::chrono::seconds(5)), Cola::PopResult::OK);
+    EXPECT_EQ(cola.pop(extracted_value, std::chrono::seconds(5)), Cola<int>::PopResult::OK);
     EXPECT_EQ(extracted_value, 10);
-    EXPECT_EQ(cola.pop(extracted_value, std::chrono::seconds(5)), Cola::PopResult::OK);
+    EXPECT_EQ(cola.pop(extracted_value, std::chrono::seconds(5)), Cola<int>::PopResult::OK);
     EXPECT_EQ(extracted_value, 20);
     EXPECT_TRUE(cola.is_empty());
 }
@@ -71,12 +71,12 @@ TEST(ColaTest, ExtractElements) {
  * must wake up immediately and return PopResult::SHUTDOWN.
  */
 TEST(ColaTest, ShutdownWakesUpImmediately) {
-    Cola cola;
+    Cola<int> cola;
     int extracted_value;
     std::atomic<bool> done{ false };
     std::thread t([&] {
         auto res = cola.pop(extracted_value, std::chrono::seconds(100));
-        EXPECT_EQ(res, Cola::PopResult::SHUTDOWN);
+        EXPECT_EQ(res, Cola<int>::PopResult::SHUTDOWN);
         done = true;
         });
 
