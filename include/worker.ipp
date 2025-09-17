@@ -80,13 +80,13 @@ void Worker<T>::run()
         typename Cola<T>::PopResult result = cola.pop(extracted_data, wait_timeout);
         switch (result) 
         {
-            case typename Cola<T>::PopResult::OK:
+            case Cola<T>::PopResult::OK:
                 action.trabajo(name, extracted_data);
                 break;
-            case typename Cola<T>::PopResult::TIMEOUT:
+            case Cola<T>::PopResult::TIMEOUT:
                 action.colaVacia(name, wait_timeout);
                 break;
-            case typename Cola<T>::PopResult::SHUTDOWN:
+            case Cola<T>::PopResult::SHUTDOWN:
                 action.colaApagada(name);
                 return;
         }
