@@ -52,9 +52,9 @@ flowchart LR
     Q -->|"pop()"| W2
     Q -->|"pop()"| W3
 
-    W1 --> A2
-    W2 --> A2
-    W3 --> A2
+    W1 --> A1
+    W2 --> A1
+    W3 --> A1
     A2 -->|implements| A1
 
 
