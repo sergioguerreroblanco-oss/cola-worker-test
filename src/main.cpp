@@ -39,6 +39,9 @@
 
 /*****************************************************************************/
 
+// Forward declaration
+void production(Cola<int>& cola);
+
 int main() {
     constexpr size_t maxQueueSize = 5;
     const std::string WORKER1_NAME = "Worker1";
