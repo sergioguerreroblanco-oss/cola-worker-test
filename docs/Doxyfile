@@ -1,0 +1,18 @@
+# Project settings
+PROJECT_NAME           = "cola-worker-test"
+PROJECT_NUMBER         = 1.0.0
+OUTPUT_DIRECTORY       = docs
+GENERATE_LATEX         = NO
+
+# Input
+INPUT                  = ../include ../src
+RECURSIVE              = YES
+
+# Output
+OUTPUT_DIRECTORY       = .
+GENERATE_HTML          = YES
+HTML_OUTPUT            = html
+
+# Misc
+QUIET                  = YES
+WARNINGS               = YES
