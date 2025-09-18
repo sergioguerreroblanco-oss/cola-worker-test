@@ -1,13 +1,13 @@
-# Carpetas de build locales
+# Local build folders
 build
 out
 .vs
 
-# Control de versiones
+# Versioning control
 .git
 .gitignore
 
-# Archivos temporales de Visual Studio / Windows
+# Temporal files of Visual Studio / Windows
 *.suo
 *.user
 *.ipch
@@ -25,6 +25,6 @@ out
 *.tmp
 *.log
 
-# Archivos del sistema
+# System files
 Thumbs.db
 Desktop.ini

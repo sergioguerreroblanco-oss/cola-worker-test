@@ -1,26 +1,26 @@
-# Imagen base mínima y estable
+# Stable base image
 FROM ubuntu:22.04
 
-# Evita prompts interactivos en apt
+# Avoid apt interactives prompts
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Instala toolchain de C++ y CMake
+# Install C++ and CMake toolchain
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     cmake \
     git \
  && rm -rf /var/lib/apt/lists/*
 
-# Copiamos el código al contenedor
+# Copy the code into the container
 WORKDIR /app
 COPY . .
 
-# Compilación fuera de árbol (build/) en modo Release
+# Compilation out of the tree (build/) in release mode
 RUN cmake -S . -B build -DCMAKE_BUILD_TYPE=Release \
  && cmake --build build -j
 
-# Muestra los fallos de test directamente en la salida
+# Show the tests errors directly in the output
 ENV CTEST_OUTPUT_ON_FAILURE=1
 
-# Por defecto, al ejecutar el contenedor, lanza los tests
+# By default, execute the container, run the tests
 CMD ["ctest", "--test-dir", "build"]

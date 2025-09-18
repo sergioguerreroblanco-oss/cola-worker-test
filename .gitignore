@@ -4,6 +4,10 @@
 # Ignore local build outputs (never commit binaries)
 build/
 out/
+docs/html/
+docs/latex/
+html/
+latex/
 
 # ============================
 # === IDE-specific files ===

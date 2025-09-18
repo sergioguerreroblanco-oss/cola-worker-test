@@ -28,7 +28,7 @@ jobs:
 
   docker:
     runs-on: ubuntu-latest
-    needs: build   # solo se ejecuta si 'build' ha ido bien
+    needs: build
 
     steps:
       - name: Checkout repo
