@@ -1,5 +1,7 @@
 # Cola & Worker
 
+![CI](https://github.com/sergioguerreroblanco-oss/cola-worker-test/actions/workflows/ci.yml/badge.svg)
+
 Cola & Worker is a C++ project that demonstrates a producer–consumer pattern with a bounded, thread-safe queue and multiple worker threads.
 It has been designed as part of a technical test, but structured in a professional way, including **templates, abstract interfaces, unit tests, logging, Docker support and CI/CD pipelines.**
 
@@ -11,7 +13,7 @@ It has been designed as part of a technical test, but structured in a profession
 - **Multiple workers** (```Worker<T>```) running in independent threads, consuming data concurrently.
 - **Abstract interface** (```IWorkerAction```) to decouple worker logic from concrete actions.
 - **Concrete action** (```PrintWorkerAction```) that logs worker events.
-- **Logger** utility for thread-safe logs with levels (INFO, WARN, ERROR).
+- **Logger** utility for thread-safe logs with levels (DEBUG, INFO, WARN, ERROR).
 - **Graceful shutdown mechanism**: workers wake up and exit cleanly.
 - **Unit tests** with GoogleTest, integrated into CMake.
 - **Reproducible builds** with Docker.
@@ -132,29 +134,44 @@ classDiagram
 ### Windows (Visual Studio 2022)
 
 1. Open **Visual Studio 2022**.  
-2. *Open folder* → select the project root (`cola-worker-test/`).  
-3. Choose a configuration (`x64-Debug` or `Release`).  
-4. Build the project (Ctrl+Shift+B).  
-5. Run the generated binary `cola_worker.exe`.  
+2. *Open Folder* → select the project root (`cola-worker-test/`).  
+3. Visual Studio will detect `CMakePresets.json`.  
+4. In the toolbar, select a configuration (`debug` or `release`).  
+5. Build (Ctrl+Shift+B).  
+6. Run the generated binary `cola_worker.exe` from `out/build/<config>/`.
 
 ---
 
-### Linux / WSL
+### Linux / WSL (Debian/Ubuntu based)
 
 Install required tools:
-```
+```bash
 sudo apt update
-sudo apt install -y build-essential cmake git
+sudo apt install -y build-essential cmake ninja-build git
 ```
-
-Build project:
-```
+Clone repository:
+```bash
 git clone https://github.com/sergioguerreroblanco-oss/cola-worker-test.git
 cd cola-worker-test
-mkdir build && cd build
-cmake .. -DCMAKE_BUILD_TYPE=Release
-cmake --build .
-./cola_worker
+```
+Release build (optimized, tests disabled):
+```bash
+cmake --preset release
+cmake --build --preset release
+./build/release/cola_worker
+```
+> Note: In **Debug** builds, unit tests are automatically enabled.  
+> After building with the `debug` preset, you can run them with:
+> ```bash
+> ctest --preset debug --output-on-failure
+> ```
+
+Debug build (with tests enabled):
+```bash
+cmake --preset debug
+cmake --build --preset debug
+ctest --preset debug
+./build/debug/cola_worker
 ```
 
 ---
@@ -168,6 +185,19 @@ They validate the main behavior of the queue (Cola<T>):
 - Timeout behavior.
 - Shutdown behavior.
 
+### Running Tests (Windows)
+
+On Windows, the project has been validated with Visual Studio 2022.
+Tests can be executed directly from Test Explorer:
+```Menu → Test → Run All Tests```
+
+Alternatively, you can also build and run tests using the provided CMake presets:
+```powershell
+cmake --preset debug
+cmake --build --preset debug
+ctest --preset debug --output-on-failure
+```
+
 ### Running Tests (Linux / Docker)
 
 After building the project, run the following command inside the build directory:
@@ -176,17 +206,10 @@ After building the project, run the following command inside the build directory
 
 This will automatically discover and execute all registered GoogleTest cases.
 
-### Running Tests (Windows)
-
-On Windows, the project has been validated with Visual Studio 2022.
-Tests can be executed directly from Test Explorer:
-```Menu → Test → Run All Tests```
-
-Alternatively, if CMake is installed and available in your PATH, you can also run from PowerShell:
-```ctest --output-on-failure```
-
-Example output:
+### Example output:
+(example output inside container) 
 ```
+
 Test project /app/build
     Start 1: ColaTest.KeepMaxBufferSize
 1/3 Test #1: ColaTest.KeepMaxBufferSize ........ Passed
@@ -203,17 +226,22 @@ Test project /app/build
 
 This project includes a Dockerfile to provide a reproducible build and test environment.
 
-Build image
+Requires Docker installed and running on your system.
+
+Build image:
 
 ```docker build -t cola-worker:dev .```
 
-Run tests inside container
+Run tests inside container:
 
 ```docker run --rm cola-worker:dev```
 
-Run main binary
+Run main binary:
 
 ```docker run --rm cola-worker:dev ./build/cola_worker```
+
+By default, the container builds the project in /app/build/. The binary can be invoked as shown.
+
 
 ---
 
@@ -235,30 +263,117 @@ This ensures that:
 ```
 cola-worker-test/
 │
-├── CMakeLists.txt           # Build configuration
-├── Dockerfile               # Docker build context
+├── .clang-format            # Code style configuration
 ├── .dockerignore
 ├── .gitignore
+├── CMakeLists.txt           # Build configuration
+├── CMakePresets.json        # Build presets (debug/release)
+├── Dockerfile               # Docker build context
 ├── README.md                # Project documentation
+│
+├── docs/                    # Documentation
+│   ├── Doxyfile             # Doxygen configuration
+│   └── README.md            # Docs instructions
 │
 ├── include/                 # Headers and template implementations
 │   ├── cola.h
 │   ├── cola.ipp
-│   ├── worker.h
-│   ├── worker.ipp
 │   ├── IWorkerAction.h
+│   ├── logger.h
 │   ├── PrintWorkerAction.h
-│   └── logger.h
+│   ├── worker.h
+│   └── worker.ipp
+│
+├── scripts/                 # Utility scripts
+│   └── generate_docs.sh     # Script to generate Doxygen docs
 │
 ├── src/                     # Source files
-│   ├── main.cpp
-│   └── logger.cpp
+│   ├── logger.cpp
+│   └── main.cpp
 │
 ├── tests/                   # Unit tests
 │   └── test_main.cpp
 │
-└── .github/workflows/
-    └── ci.yml               # GitHub Actions CI/CD
+└── .github/workflows/       # CI/CD pipelines
+    └── ci.yml
+```
+
+---
+
+## 📖 Documentation
+
+This project uses [Doxygen](https://www.doxygen.nl/) to generate API documentation
+from source code comments.
+
+### Generate documentation
+
+#### Windows (PowerShell)
+```powershell
+cd docs
+doxygen Doxyfile
+start html\index.html
+```
+
+#### Linux / WSL (Debian/Ubuntu based)
+```bash
+./scripts/generate_docs.sh
+```
+
+Open in your browser:
+```bash
+docs/html/index.html
+```
+
+For more details, see docs/README.md
+
+---
+
+## 🎨 Code Style (clang-format)
+
+This project uses **clang-format** to enforce a consistent C++ code style.  
+The formatting rules are defined in [`.clang-format`](./.clang-format). 
+
+### Chosen Style
+
+This project uses a `.clang-format` configuration derived from **Google C++ Style**,  
+with a few adjustments tailored for readability and consistency:
+
+- **IndentWidth: 4** → default Google style uses 2 spaces; 4 spaces give more clarity for nested code.  
+- **ColumnLimit: 100** → avoids very long lines while still allowing expressive function names and templates.  
+- **Language: Cpp** → ensures the formatter applies C++ rules (not generic C).  
+- **Standard: Cpp11** → compatible setting for clang-format; matches well with the project’s target (C++14).  
+
+### Windows (Visual Studio Code / PowerShell)
+
+1. Install LLVM (includes clang-format):
+
+    - Download the LLVM installer for Windows (`https://github.com/llvm/llvm-project/releases`)
+    
+    - During setup, check “Add LLVM to the system PATH”.
+
+2. Verify installation:
+
+```PowerShell
+clang-format --version
+```
+3. Format all project files:
+```PowerShell
+clang-format -i include\*.h include\*.ipp src\*.cpp tests\*.cpp
+```
+### Linux / WSL (Debian/Ubuntu based)
+
+1. Install clang-format:
+```bash
+sudo apt update
+sudo apt install -y clang-format
+```
+2. Verify installation:
+```bash
+clang-format --version
+```
+3. Format all project files:
+```bash
+clang-format -i include/*.h include/*.ipp src/*.cpp tests/*.cpp
 ```
 
 ---
@@ -267,10 +382,11 @@ cola-worker-test/
 
 - C++ Standard: C++14 (set(CMAKE_CXX_STANDARD 14)).
 - Thread Safety: Managed with std::mutex, std::condition_variable, and std::atomic.
-- Extensibility: Queue and workers implemented as templates (Cola<T>, Worker<T>).
-- Interfaces: Worker behavior decoupled via IWorkerAction.
+- Extensibility: Worker actions decoupled via `IWorkerAction` interface 
+  → new behaviors can be added without modifying worker logic.
 - Logging: Centralized Logger utility with severity levels.
 - Cross-Platform: Builds on Windows (MSVC), Linux (g++) and Docker.
+- Queue implementation: `Cola<T>` uses `std::deque` internally rather than a custom array-based buffer. This choice favors **simplicity, correctness, and STL optimizations**, while still enforcing the bounded size (default: 5 elements). A custom queue could have been implemented, but `std::deque` provides robust, well-tested behavior with minimal overhead.
 
 ---
 
