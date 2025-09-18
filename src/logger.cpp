@@ -9,13 +9,15 @@
 
 /*****************************************************************************/
 
-/* Libraries */
+/* Standard libraries */
 
-#include <iostream>
-#include <sstream>
-#include <iomanip>
 #include <chrono>
 #include <ctime>
+#include <iomanip>
+#include <iostream>
+#include <sstream>
+
+/* Project libraries */
 
 #include "logger.h"
 
@@ -30,43 +32,27 @@ Logger::Level Logger::minLevel = Logger::Level::INFO;
 
 /* Public Methods */
 
-void Logger::set_min_level(Level lvl) 
-{
+void Logger::set_min_level(Level lvl) {
     std::lock_guard<std::mutex> lock(mtx);
     minLevel = lvl;
 }
 
-void Logger::debug(const std::string& msg)
-{
-    log(Level::DBG, msg);
-}
+void Logger::debug(const std::string& msg) { log(Level::DBG, msg); }
 
-void Logger::info(const std::string& msg) 
-{ 
-    log(Level::INFO, msg); 
-}
+void Logger::info(const std::string& msg) { log(Level::INFO, msg); }
 
-void Logger::warn(const std::string& msg) 
-{ 
-    log(Level::WARN, msg); 
-}
+void Logger::warn(const std::string& msg) { log(Level::WARN, msg); }
 
-void Logger::error(const std::string& msg) 
-{ 
-    log(Level::ERROR, msg); 
-}
+void Logger::error(const std::string& msg) { log(Level::ERROR, msg); }
 
-void Logger::log(Level lvl, const std::string& msg) 
-{
+void Logger::log(Level lvl, const std::string& msg) {
     std::lock_guard<std::mutex> lock(mtx);
-    if (static_cast<int>(lvl) < static_cast<int>(minLevel))
-    {
+    if (static_cast<int>(lvl) < static_cast<int>(minLevel)) {
         return;
     }
 
     std::cout << "[" << timestamp() << "] "
-        << "[" << levelToString(lvl) << "] "
-        << msg << std::endl;
+              << "[" << levelToString(lvl) << "] " << msg << std::endl;
 }
 
 /*****************************************************************************/
@@ -92,11 +78,16 @@ std::string Logger::timestamp() {
 
 const char* Logger::levelToString(Level lvl) {
     switch (lvl) {
-    case Level::DBG:   return "DEBUG";
-    case Level::INFO:  return "INFO";
-    case Level::WARN:  return "WARN";
-    case Level::ERROR: return "ERROR";
-    default:           return "UNKNOWN";
+        case Level::DBG:
+            return "DEBUG";
+        case Level::INFO:
+            return "INFO";
+        case Level::WARN:
+            return "WARN";
+        case Level::ERROR:
+            return "ERROR";
+        default:
+            return "UNKNOWN";
     }
 }
 

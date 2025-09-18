@@ -12,9 +12,10 @@
 /* Libraries */
 
 #include <gtest/gtest.h>
-#include <thread>
-#include <chrono>
+
 #include <atomic>
+#include <chrono>
+#include <thread>
 
 #include "cola.h"
 
@@ -37,7 +38,8 @@ TEST(ColaTest, KeepMaxBufferSize) {
         cola.push(i);
     }
     EXPECT_EQ(cola.get_size(), 5u);
-    EXPECT_EQ(cola.pop(extracted_value, std::chrono::seconds(5)), Cola<int>::PopResult::OK);  // The first value (0) was deleted
+    EXPECT_EQ(cola.pop(extracted_value, std::chrono::seconds(5)),
+              Cola<int>::PopResult::OK);  // The first value (0) was deleted
     EXPECT_EQ(extracted_value, 1);
 }
 
@@ -73,12 +75,12 @@ TEST(ColaTest, ExtractElements) {
 TEST(ColaTest, ShutdownWakesUpImmediately) {
     Cola<int> cola;
     int extracted_value;
-    std::atomic<bool> done{ false };
+    std::atomic<bool> done{false};
     std::thread t([&] {
         auto res = cola.pop(extracted_value, std::chrono::seconds(100));
         EXPECT_EQ(res, Cola<int>::PopResult::SHUTDOWN);
         done = true;
-        });
+    });
 
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
     cola.shutdown();

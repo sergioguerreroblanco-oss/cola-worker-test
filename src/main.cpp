@@ -9,47 +9,43 @@
  * @details
  * This program demonstrates the producer-consumer pattern using:
  *  - A thread-safe generic queue (`Cola<T>`) with bounded capacity.
- *  - Multiple worker threads (`Worker<T>`) that process elements 
+ *  - Multiple worker threads (`Worker<T>`) that process elements
  *    through an injected action (`IWorkerAction<T>` implementation).
  *
  * In this example:
  *  - The main thread produces integer values at fixed intervals.
  *  - Three worker threads consume and process the values concurrently.
- *  - Processing is delegated to a `PrintWorkerAction`, which logs 
+ *  - Processing is delegated to a `PrintWorkerAction`, which logs
  *    the results with timestamps and severity levels.
  *
- * The application illustrates thread synchronization, dependency 
+ * The application illustrates thread synchronization, dependency
  * injection for worker behavior, and a clean shutdown procedure.
  */
 
- /*****************************************************************************/
+/*****************************************************************************/
 
-/* Libraries */
+/* Standard libraries */
 
-#include <thread>
 #include <chrono>
 #include <string>
+#include <thread>
 
-#include "cola.h"
+/* Project libraries */
+
 #include "PrintWorkerAction.h"
-#include "worker.h"
+#include "cola.h"
 #include "logger.h"
+#include "worker.h"
 
-/* Namespace */
+/*****************************************************************************/
 
-using namespace std::chrono_literals;
-
-int main() 
-{
-    Logger::set_min_level(Logger::Level::INFO);
-
+int main() {
     constexpr size_t maxQueueSize = 5;
-    constexpr int maxValues = 15;
-    constexpr auto pushInterval = 200ms;
-    constexpr auto mainSleep = 10s;
     const std::string WORKER1_NAME = "Worker1";
     const std::string WORKER2_NAME = "Worker2";
     const std::string WORKER3_NAME = "Worker3";
+
+    Logger::set_min_level(Logger::Level::INFO);
 
     Cola<int> cola(maxQueueSize);
 
@@ -65,17 +61,11 @@ int main()
 
     /**
      * NOTE: In a real world scenario, production would be driven by external events
-     * (e.g. hardware input, network messages, sensors, etc.). 
-     * Here we simulate a steady production rate with sleep_for to clearly demonstrate 
+     * (e.g. hardware input, network messages, sensors, etc.).
+     * Here we simulate a steady production rate with sleep_for to clearly demonstrate
      * the producer-consumer mechanism without adding unnecessary complexity.
      */
-    for (int i = 0; i < maxValues; ++i)
-    {
-        cola.push(i);
-        std::this_thread::sleep_for(pushInterval);
-    }
-
-    std::this_thread::sleep_for(mainSleep);
+    production(cola);
 
     cola.shutdown();
 
@@ -84,4 +74,23 @@ int main()
     worker3.stop();
 
     return 0;
+}
+
+/**
+ * @brief Producer function that periodically pushes integers into the queue.
+ * @param cola Reference to the queue where integers are inserted.
+ */
+void production(Cola<int>& cola) {
+    using namespace std::chrono_literals;
+
+    constexpr int maxValues = 15;
+    constexpr auto pushInterval = 200ms;
+    constexpr auto mainSleep = 10s;
+
+    for (int i = 0; i < maxValues; ++i) {
+        cola.push(i);
+        std::this_thread::sleep_for(pushInterval);
+    }
+
+    std::this_thread::sleep_for(mainSleep);
 }

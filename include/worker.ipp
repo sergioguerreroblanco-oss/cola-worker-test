@@ -5,11 +5,23 @@
  * @version     1.0.0
  *
  * @brief       Implementation of the Worker<T> template class.
+ *
+ * @details
+ * This file provides the definitions of all Worker<T> methods.
+ *
+ * The Worker is responsible for running in its own thread, consuming
+ * elements from a thread-safe queue (`Cola<T>`), and delegating the
+ * handling of events (element retrieved, timeout, or shutdown) to a
+ * strategy defined via the IWorkerAction<T> interface.
+ *
+ * Keeping the implementation in a separate `.ipp` file, included at the
+ * end of `worker.h`, ensures that template definitions are visible at
+ * compile time while keeping headers organized and readable.
  */
 
 /*****************************************************************************/
 
-/* Libraries */
+/* Project libraries */
 
 #include "worker.h"
 
@@ -18,26 +30,21 @@
 /* Public Methods */
 
 /**
- * @details Constructor of the Worker that also initializes the running flag to false.
+ * @details Implementation of the Worker constructor.
+ * Initializes references to the queue and action, and sets the worker name.
  */
 template <typename T>
 Worker<T>::Worker(Cola<T>& cola, IWorkerAction<T>& action, const std::string& name)
-    : cola(cola), 
-    action(action), 
-    name(name), 
-    running(false) 
-{}
+    : cola(cola), action(action), name(name), running(false) {}
 
 /**
- * @details Ensures the worker thread has finished 
+ * @details Ensures the worker thread has finished
  * before destruction (joins the thread if needed)
  */
 template <typename T>
-Worker<T>::~Worker() 
-{
+Worker<T>::~Worker() {
     stop();
-    if (thread.joinable()) 
-    {
+    if (thread.joinable()) {
         thread.join();
     }
     action.onStop(name);
@@ -48,19 +55,17 @@ Worker<T>::~Worker()
  * and getting the thread for it.
  */
 template <typename T>
-void Worker<T>::start() 
-{
+void Worker<T>::start() {
     running = true;
     thread = std::thread(&Worker<T>::run, this);
 }
 
 /**
- * @details Stops the worker activity by setting its running flag to false. 
+ * @details Stops the worker activity by setting its running flag to false.
  * The thread will exit gracefully after the current iteration
  */
 template <typename T>
-void Worker<T>::stop() 
-{
+void Worker<T>::stop() {
     running = false;
     if (thread.joinable()) {
         thread.join();
@@ -72,14 +77,11 @@ void Worker<T>::stop()
  * the data from the buffer is handled.
  */
 template <typename T>
-void Worker<T>::run() 
-{
-    while (running) 
-    {
+void Worker<T>::run() {
+    while (running) {
         T extracted_data;
         typename Cola<T>::PopResult result = cola.pop(extracted_data, wait_timeout);
-        switch (result) 
-        {
+        switch (result) {
             case Cola<T>::PopResult::OK:
                 action.trabajo(name, extracted_data);
                 break;
@@ -88,6 +90,8 @@ void Worker<T>::run()
                 break;
             case Cola<T>::PopResult::SHUTDOWN:
                 action.colaApagada(name);
+                return;
+            default:
                 return;
         }
     }

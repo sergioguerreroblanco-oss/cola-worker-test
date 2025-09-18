@@ -27,109 +27,136 @@
 
 /*****************************************************************************/
 
-/* Libraries */
+/* Standard libraries */
 
 #include <atomic>
-#include <thread>
-#include <string>
 #include <mutex>
+#include <string>
+#include <thread>
 
-#include "cola.h"
+/* Project libraries */
+
 #include "IWorkerAction.h"
+#include "cola.h"
 
 /*****************************************************************************/
 
-/* Class Worker */
-
+/**
+ * @class Worker
+ * @brief Worker thread that consumes data from a queue.
+ * @tparam T Type of data consumed from the queue.
+ *
+ * Each Worker runs in its own thread, repeatedly calling `pop()` on the queue
+ * and delegating the retrieved data to the associated IWorkerAction.
+ * It supports graceful shutdown and explicit stop.
+ */
 template <typename T>
 class Worker {
     /******************************************************************/
-    
+
     /* Private Constants */
 
-    private:
+   private:
+    /**
+     * @brief Time to wait new values enter into the Cola when it is empty.
+     */
+    const std::chrono::seconds wait_timeout{5};
 
-        /**
-         * @brief Time to wait new values enter into the Cola when it is empty.
-         */
-        const std::chrono::seconds wait_timeout{ 5 };
-    
     /******************************************************************/
 
     /* Public Methods */
 
-    public:
-        /**
-         * @brief Construct a new Worker object.
-         * @param cola The "cola" to get values from.
-         * @param name The name of the worker, by default "Worker".
-         */
-        explicit Worker(Cola<T>& cola, IWorkerAction<T>& action, const std::string& name = "Worker");
+   public:
+    /**
+     * @brief Construct a worker bound to a queue and an action.
+     * @param cola Reference to the queue from which the worker consumes data.
+     * @param action Reference to the action strategy executed by the worker.
+     * @param name Optional worker name for logging/identification.
+     */
+    explicit Worker(Cola<T>& cola, IWorkerAction<T>& action, const std::string& name = "Worker");
 
+    /**
+     * @brief Destruct a Worker object.
+     */
+    ~Worker();
 
-        /**
-         * @brief Destruct a Worker object.
-         */
-        ~Worker();
+    /**
+     * @brief Disable copy constructor.
+     * Worker cannot be copied because it manages a std::thread,
+     * which cannot be safely duplicated.
+     */
+    Worker(const Worker&) = delete;
 
-        /**
-         * @brief Disable copy and move semantics since Worker manages a std::thread, which
-         * cannot be safely copied or moved. Each Worker only owns its thread.
-         */
-        Worker(const Worker&) = delete;
-        Worker& operator=(const Worker&) = delete;
-        Worker(Worker&&) = delete;
-        Worker& operator=(Worker&&) = delete;
+    /**
+     * @brief Disable copy assignment operator.
+     * Worker cannot be copy-assigned because it owns a std::thread,
+     * which cannot be safely reassigned.
+     */
+    Worker& operator=(const Worker&) = delete;
 
-        /**
-         * @brief Starts the Worker.
-         */
-        void start();
+    /**
+     * @brief Disable move constructor.
+     * Worker cannot be moved because transferring ownership of
+     * an active std::thread is unsafe.
+     */
+    Worker(Worker&&) = delete;
 
-        /**
-         * @brief Stops the Worker.
-         */
-        void stop();
+    /**
+     * @brief Disable move assignment operator.
+     * Worker cannot be move-assigned because std::thread ownership
+     * cannot be safely transferred.
+     */
+    Worker& operator=(Worker&&) = delete;
+
+    /**
+     * @brief Starts the Worker.
+     */
+    void start();
+
+    /**
+     * @brief Stops the Worker.
+     */
+    void stop();
 
     /******************************************************************/
 
     /* Private Methods */
 
-    private:
-        /**
-         * @brief Manage the Worker actions.
-         */
-        void run();
+   private:
+    /**
+     * @brief Manage the Worker actions.
+     */
+    void run();
 
     /******************************************************************/
 
     /* Private Attributes */
 
-    private:
-        /**
-         * @brief Cola used by the worker.
-         */
-        Cola<T>& cola;
+   private:
+    /**
+     * @brief Cola used by the worker.
+     */
+    Cola<T>& cola;
 
-        /**
-         * @brief The worker action interface.
-         */
-        IWorkerAction<T>& action;
+    /**
+     * @brief The worker action interface.
+     */
+    IWorkerAction<T>& action;
 
-        /**
-         * @brief Name of the worker.
-         */
-        std::string name;
+    /**
+     * @brief Name of the worker.
+     */
+    std::string name;
 
-        /**
-         * @brief Thread used by the worker.
-         */
-        std::thread thread;
+    /**
+     * @brief Thread used by the worker.
+     */
+    std::thread thread;
 
-        /**
-         * @brief Indicator of the worker that can be modified by other threads.
-         */
-        std::atomic<bool> running;
+    /**
+     * @brief Indicator of the worker that can be modified by other threads.
+     */
+    std::atomic<bool> running;
 
     /******************************************************************/
 };
