@@ -74,28 +74,32 @@ class Cola {
     /**
      * @brief Disable copy constructor.
      * Cola cannot be copied because it manages synchronization primitives
-     * (std::mutex, std::condition_variable) which are non-copyable.
+     * (std::mutex, std::condition_variable), which are non-copyable.
      */
     Cola(const Cola&) = delete;
 
     /**
      * @brief Disable copy assignment operator.
-     * Cola cannot be assigned by copy for the same reason: it manages
-     * synchronization primitives that are non-copyable.
+     * Cola cannot be copy-assigned for the same reason:
+     * synchronization primitives cannot be duplicated safely.
      */
     Cola& operator=(const Cola&) = delete;
 
     /**
      * @brief Disable move constructor.
-     * Cola cannot be moved because synchronization primitives
-     * are not safely movable between instances.
+     * Although std::mutex and std::condition_variable technically
+     * have move operations deleted, even if they were movable,
+     * transferring them between Cola instances would break
+     * synchronization guarantees. To enforce strict ownership,
+     * movement is disabled.
      */
     Cola(Cola&&) = delete;
 
     /**
      * @brief Disable move assignment operator.
-     * Cola cannot be move-assigned because synchronization primitives
-     * cannot be safely transferred between instances.
+     * Move assignment is also disabled to avoid transferring
+     * synchronization primitives between instances, which could
+     * lead to undefined behavior.
      */
     Cola& operator=(Cola&&) = delete;
 

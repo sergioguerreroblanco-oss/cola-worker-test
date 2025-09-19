@@ -82,29 +82,34 @@ class Worker {
 
     /**
      * @brief Disable copy constructor.
-     * Worker cannot be copied because it manages a std::thread,
-     * which cannot be safely duplicated.
+     * A Worker cannot be copied because it manages a std::thread,
+     * which is non-copyable. Copying would imply two Workers
+     * owning the same thread, which is undefined.
      */
     Worker(const Worker&) = delete;
 
     /**
      * @brief Disable copy assignment operator.
-     * Worker cannot be copy-assigned because it owns a std::thread,
-     * which cannot be safely reassigned.
+     * A Worker cannot be copy-assigned because std::thread
+     * cannot be duplicated or reassigned between different owners.
      */
     Worker& operator=(const Worker&) = delete;
 
     /**
      * @brief Disable move constructor.
-     * Worker cannot be moved because transferring ownership of
-     * an active std::thread is unsafe.
+     * Although std::thread supports move semantics,
+     * allowing Worker to be movable could transfer the
+     * ownership of an active thread, leaving the source
+     * Worker in an inconsistent state. To enforce strict
+     * ownership, movement is disabled.
      */
     Worker(Worker&&) = delete;
 
     /**
      * @brief Disable move assignment operator.
-     * Worker cannot be move-assigned because std::thread ownership
-     * cannot be safely transferred.
+     * Move assignment is also disabled for the same reason:
+     * to prevent accidental transfer of thread ownership
+     * between Worker instances.
      */
     Worker& operator=(Worker&&) = delete;
 
