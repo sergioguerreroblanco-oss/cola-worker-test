@@ -32,9 +32,9 @@
 
 /* Project libraries */
 
-#include "PrintWorkerAction.h"
 #include "cola.h"
 #include "logger.h"
+#include "print_worker_action.h"
 #include "worker.h"
 
 /*****************************************************************************/

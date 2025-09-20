@@ -1,4 +1,10 @@
-cmake_minimum_required(VERSION 3.19)
+﻿cmake_minimum_required(VERSION 3.19)
+
+# For FetchContent (CMP0135 warning)
+if(POLICY CMP0135)
+    cmake_policy(SET CMP0135 NEW)
+endif()
+
 project(cola_worker_test 
     VERSION 1.0.0
     LANGUAGES CXX
@@ -35,6 +41,12 @@ if(BUILD_TESTING)
     )
     set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
     FetchContent_MakeAvailable(googletest)
+
+    # 👇 Silenciar warnings de GTest marcando sus includes como "SYSTEM"
+    target_include_directories(gtest       SYSTEM PRIVATE ${gtest_SOURCE_DIR}/include)
+    target_include_directories(gtest_main  SYSTEM PRIVATE ${gtest_SOURCE_DIR}/include)
+    target_include_directories(gmock       SYSTEM PRIVATE ${gtest_SOURCE_DIR}/include)
+    target_include_directories(gmock_main  SYSTEM PRIVATE ${gtest_SOURCE_DIR}/include)
 
     add_executable(tests tests/test_main.cpp)
     target_link_libraries(tests PRIVATE core gtest_main)
