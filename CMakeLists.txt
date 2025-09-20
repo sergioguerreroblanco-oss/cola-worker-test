@@ -42,7 +42,6 @@ if(BUILD_TESTING)
     set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
     FetchContent_MakeAvailable(googletest)
 
-    # 👇 Silenciar warnings de GTest marcando sus includes como "SYSTEM"
     target_include_directories(gtest       SYSTEM PRIVATE ${gtest_SOURCE_DIR}/include)
     target_include_directories(gtest_main  SYSTEM PRIVATE ${gtest_SOURCE_DIR}/include)
     target_include_directories(gmock       SYSTEM PRIVATE ${gtest_SOURCE_DIR}/include)
