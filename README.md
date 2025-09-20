@@ -7,17 +7,44 @@ It has been designed as part of a technical test, but structured in a profession
 
 ---
 
-## ✨ Features
+## ✨ Core Features
 
-- **Thread-safe bounded queue** (```Cola<T>```) implemented as a C++14 template with configurable maximum size (Default: 5 elements).
-- **Multiple workers** (```Worker<T>```) running in independent threads, consuming data concurrently.
-- **Abstract interface** (```IWorkerAction```) to decouple worker logic from concrete actions.
-- **Concrete action** (```PrintWorkerAction```) that logs worker events.
-- **Logger** utility for thread-safe logs with levels (DEBUG, INFO, WARN, ERROR).
-- **Graceful shutdown mechanism**: workers wake up and exit cleanly.
-- **Unit tests** with GoogleTest, integrated into CMake.
-- **Reproducible builds** with Docker.
-- **Continuous Integration** with GitHub Actions (build + test + Docker validation).
+- **Thread-safe bounded queue (`Cola<T>`)**  
+  - Generic template with configurable maximum size (default: 5).  
+  - FIFO with automatic removal of the oldest element when the limit is reached.  
+  - `pop()` supports **configurable timeout** and returns states (`OK`, `TIMEOUT`, `SHUTDOWN`).  
+  - **Graceful shutdown**: consumers wake up and terminate cleanly when the queue is closed.  
+
+- **Workers (`Worker<T>`)**  
+  - Each worker runs in its own thread and consumes data from the queue concurrently.  
+  - Automatically handles **timeout** and **shutdown** scenarios.  
+  - Behavior is delegated through the **abstract interface** `IWorkerAction<T>`.  
+
+- **Extensibility via Interfaces**  
+  - `IWorkerAction<T>` defines key events: `trabajo()`, `colaVacia()`, `colaApagada()`, `onStop()`.  
+  - Makes it easy to inject different behaviors without modifying the `Worker` class.  
+
+- **Concrete Action Example**  
+  - `PrintWorkerAction<T>` implements the interface to log worker events.  
+  - Provided as a demonstration, but can be easily replaced with custom actions.  
+
+- **Thread-safe Logger**  
+  - Centralized utility with log levels (`DEBUG`, `INFO`, `WARN`, `ERROR`).  
+  - Reusable across any action or additional component.  
+
+
+## 🌟 Project Highlights
+
+- **Unit tests** with GoogleTest, validating queue size limits, FIFO behavior, and shutdown handling.  
+- **Centralized logging** (`Logger`) with thread safety and severity levels (DEBUG, INFO, WARN, ERROR).  
+- **Automatic documentation** with Doxygen-ready headers.  
+- **Continuous Integration** with GitHub Actions:
+    - **ci.yml** → build, run tests, and validate Docker image.
+    - **docs.yml** → generate and upload HTML/PDF documentation.
+- **Reproducible builds** with Docker, using a Debian/Ubuntu base image.  
+- **Cross-platform compatibility**: builds on Windows (MSVC), Linux (g++) and Clang, and inside Docker.  
+- **Strict compiler warnings**: `/W4` on MSVC, `-Wall -Wextra -Wpedantic` on GCC/Clang.  
+- **CMake presets** to simplify builds across environments.  
 
 ---
 
@@ -138,8 +165,16 @@ classDiagram
 3. Visual Studio will detect `CMakePresets.json`.  
 4. In the toolbar, select a configuration (`debug` or `release`).  
 5. Build (Ctrl+Shift+B).  
-6. Run the generated binary `cola_worker.exe` from `out/build/<config>/`.
+6. Run the generated binary `cola_worker[.exe]` from `build/<config>/`.
 
+---
+
+### Windows (PowerShell)
+```powershell
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+.\scripts\build.ps1 -preset release   # Build Release
+.\scripts\build.ps1 -preset debug     # Build Debug (with tests)
+```
 ---
 
 ### Linux / WSL (Debian/Ubuntu based)
@@ -149,29 +184,16 @@ Install required tools:
 sudo apt update
 sudo apt install -y build-essential cmake ninja-build git
 ```
-Clone repository:
+Clone repository (first time only):
 ```bash
 git clone https://github.com/sergioguerreroblanco-oss/cola-worker-test.git
 cd cola-worker-test
 ```
-Release build (optimized, tests disabled):
+Build project:
 ```bash
-cmake --preset release
-cmake --build --preset release
-./build/release/cola_worker
-```
-> Note: In **Debug** builds, unit tests are automatically enabled.  
-> After building with the `debug` preset, you can run them with:
-> ```bash
-> ctest --preset debug --output-on-failure
-> ```
-
-Debug build (with tests enabled):
-```bash
-cmake --preset debug
-cmake --build --preset debug
-ctest --preset debug
-./build/debug/cola_worker
+chmod +x scripts/build.sh
+./scripts/build.sh --preset release   # Build Release
+./scripts/build.sh --preset debug     # Build Debug (with tests)
 ```
 
 ---
@@ -209,15 +231,20 @@ This will automatically discover and execute all registered GoogleTest cases.
 ### Example output:
 (example output inside container) 
 ```
-
-Test project /app/build
+Test project C:/cola-worker-test/build/debug
     Start 1: ColaTest.KeepMaxBufferSize
-1/3 Test #1: ColaTest.KeepMaxBufferSize ........ Passed
-    Start 2: ColaTest.ExtractElements
-2/3 Test #2: ColaTest.ExtractElements .......... Passed
-    Start 3: ColaTest.ShutdownWakesUpImmediately
-3/3 Test #3: ColaTest.ShutdownWakesUpImmediately Passed
-100% tests passed, 0 tests failed out of 3
+1/6 Test #1: ColaTest.KeepMaxBufferSize .........................................   Passed    0.04 sec
+    Start 2: ColaTest.ShutdownWakesUpImmediately
+2/6 Test #2: ColaTest.ShutdownWakesUpImmediately ................................   Passed    0.12 sec
+    Start 3: ColaTest.PopReturnsTimeout
+3/6 Test #3: ColaTest.PopReturnsTimeout .........................................   Passed    1.01 sec
+    Start 4: MultipleSequences/ColaFifoTest.ExtractsInOrder/{ 10, 20 }
+4/6 Test #4: MultipleSequences/ColaFifoTest.ExtractsInOrder/{ 10, 20 } ..........   Passed    0.01 sec
+    Start 5: MultipleSequences/ColaFifoTest.ExtractsInOrder/{ 1, 2, 3, 4, 5 }
+5/6 Test #5: MultipleSequences/ColaFifoTest.ExtractsInOrder/{ 1, 2, 3, 4, 5 } ...   Passed    0.01 sec
+    Start 6: MultipleSequences/ColaFifoTest.ExtractsInOrder/{ 42 }
+6/6 Test #6: MultipleSequences/ColaFifoTest.ExtractsInOrder/{ 42 } ..............   Passed    0.01 sec
+100% tests passed, 0 tests failed out of 6
 ```
 
 ---
@@ -247,14 +274,28 @@ By default, the container builds the project in /app/build/. The binary can be i
 
 ## 🔄 Continuous Integration
 
-A GitHub Actions workflow (```.github/workflows/ci.yml```) is provided. It performs:
-- Build and run unit tests on ```ubuntu-latest``` using CMake and g++.
-- Build Docker image and execute the binary/tests inside the container.
+This project provides two GitHub Actions workflows under .github/workflows/:
+
+### ci.yml
+
+- Builds and runs unit tests on ubuntu-latest using CMake and g++.
+- Builds the Docker image and executes the binary/tests inside the container.
 
 This ensures that:
+
 - The code always compiles on a clean environment.
 - All unit tests pass successfully on each push/pull request.
 - The project works both in native Linux and inside a reproducible Docker container.
+
+### docs.yml
+
+- Installs Doxygen (and LaTeX on Linux).
+- Generates documentation (HTML and PDF).
+- Uploads the generated artifacts so they can be downloaded directly from the workflow run.
+
+This ensures that:
+- Documentation is always up to date with the source code.
+- Both HTML and PDF docs are available without needing local generation.
 
 ---
 
@@ -263,39 +304,44 @@ This ensures that:
 ```
 cola-worker-test/
 │
-├── .clang-format            # Code style configuration
+├── .clang-format              # Code style configuration
 ├── .dockerignore
 ├── .gitignore
-├── CMakeLists.txt           # Build configuration
-├── CMakePresets.json        # Build presets (debug/release)
-├── Dockerfile               # Docker build context
-├── README.md                # Project documentation
+├── CMakeLists.txt             # Build configuration
+├── CMakePresets.json          # Build presets (debug/release)
+├── Dockerfile                 # Docker build context
+├── README.md                  # Project documentation
 │
-├── docs/                    # Documentation
-│   ├── Doxyfile             # Doxygen configuration
-│   └── README.md            # Docs instructions
+├── docs/                      # Documentation
+│   ├── Doxyfile               # Doxygen configuration
+│   └── README.md              # Docs instructions
 │
-├── include/                 # Headers and template implementations
+├── include/                   # Public headers and templates
 │   ├── cola.h
 │   ├── cola.ipp
-│   ├── IWorkerAction.h
+│   ├── i_worker_action.h
 │   ├── logger.h
-│   ├── PrintWorkerAction.h
+│   ├── print_worker_action.h
 │   ├── worker.h
 │   └── worker.ipp
 │
-├── scripts/                 # Utility scripts
-│   └── generate_docs.sh     # Script to generate Doxygen docs
+├── scripts/                   # Utility scripts
+│   ├── build.sh               # Linux build script
+│   ├── build.ps1              # Windows build script
+│   ├── generate_docs.sh       # Linux/WSL docs generation
+│   └── generate_docs.ps1      # Windows docs generation
 │
-├── src/                     # Source files
+├── src/                       # Source files
 │   ├── logger.cpp
 │   └── main.cpp
 │
-├── tests/                   # Unit tests
+├── tests/                     # Unit tests
 │   └── test_main.cpp
 │
-└── .github/workflows/       # CI/CD pipelines
-    └── ci.yml
+└── .github/workflows/         # CI/CD pipelines
+    ├── ci.yml                 # Build & test workflow
+    └── docs.yml               # Documentation workflow
+
 ```
 
 ---
@@ -309,15 +355,21 @@ from source code comments.
 
 #### Windows (PowerShell)
 ```powershell
-cd docs
-doxygen Doxyfile
-start html\index.html
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+.\scripts\generate_docs.ps1
 ```
+Generates HTML (docs/html/index.html) and LaTeX sources (docs/latex/).
+
+PDF (refman.pdf) is not generated on Windows unless you install a full LaTeX toolchain (MiKTeX/TeX Live + make).
 
 #### Linux / WSL (Debian/Ubuntu based)
 ```bash
+sudo apt update
+sudo apt install -y doxygen graphviz texlive-latex-base texlive-fonts-recommended texlive-latex-extra make
+chmod +x scripts/generate_docs.sh
 ./scripts/generate_docs.sh
 ```
+Generates HTML (docs/html/index.html) and PDF (docs/latex/refman.pdf).
 
 Open in your browser:
 ```bash

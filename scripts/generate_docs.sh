@@ -1,6 +1,14 @@
 ﻿#!/usr/bin/env bash
 set -e
 
+echo "Sanitizing source files (replace curly quotes with ASCII)..."
+find include src -type f -exec sed -i \
+    -e "s/’/'/g" \
+    -e "s/‘/'/g" \
+    -e 's/“/"/g' \
+    -e 's/”/"/g' \
+    {} +
+
 PROJECT_ROOT="$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." && pwd )"
 
 DOXYGEN_CMD=$(command -v doxygen || true)
@@ -15,4 +23,10 @@ echo "Generating documentation..."
 cd "$PROJECT_ROOT/docs"
 doxygen Doxyfile
 
-echo "Documentation generated in docs/html/index.html"
+# Compile PDF (LaTeX -> PDF)
+if [ -d "latex" ]; then
+  echo "Compiling LaTeX to PDF..."
+  make -C latex
+fi
+
+echo "Documentation generated in docs/html and docs/latex/refman.pdf"
