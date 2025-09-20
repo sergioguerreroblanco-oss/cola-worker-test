@@ -80,13 +80,13 @@ template <typename T>
 void Worker<T>::run() {
     while (running) {
         T extracted_data;
-        typename Cola<T>::PopResult result = cola.pop(extracted_data, wait_timeout);
+        typename Cola<T>::PopResult result = cola.pop(extracted_data, DEFAULT_WAIT_TIMEOUT);
         switch (result) {
             case Cola<T>::PopResult::OK:
                 action.trabajo(name, extracted_data);
                 break;
             case Cola<T>::PopResult::TIMEOUT:
-                action.colaVacia(name, wait_timeout);
+                action.colaVacia(name, DEFAULT_WAIT_TIMEOUT);
                 break;
             case Cola<T>::PopResult::SHUTDOWN:
                 action.colaApagada(name);

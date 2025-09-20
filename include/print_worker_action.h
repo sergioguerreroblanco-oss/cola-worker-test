@@ -1,5 +1,5 @@
 /**
- * @file        PrintWorkerAction.h
+ * @file        print_worker_action.h
  * @author      Sergio Guerrero Blanco <sergioguerreroblanco@hotmail.com>
  * @date        <2025-09-15>
  * @version     1.0.0
@@ -35,7 +35,7 @@
 
 /* Project libraries */
 
-#include "IWorkerAction.h"
+#include "i_worker_action.h"
 #include "logger.h"
 
 /*****************************************************************************/

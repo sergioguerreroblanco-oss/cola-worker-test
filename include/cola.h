@@ -125,7 +125,7 @@ class Cola {
     PopResult pop(T& out, std::chrono::seconds timeout);
 
     /**
-     * @brief Getter of the buffer's size.
+     * @brief Getter of the buffer size.
      * @return Size of the buffer.
      */
     size_t get_size(void) const;

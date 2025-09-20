@@ -1,5 +1,5 @@
 /**
- * @file        IWorkerAction.h
+ * @file        i_worker_action.h
  * @author      Sergio Guerrero Blanco <sergioguerreroblanco@hotmail.com>
  * @date        <2025-09-15>
  * @version     1.0.0

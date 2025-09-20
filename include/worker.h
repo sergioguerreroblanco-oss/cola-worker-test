@@ -13,7 +13,7 @@
  * handling of events to a user-defined action (via the IWorkerAction<T>
  * interface).
  *
- * This design decouples the worker’s concurrency logic from the specific
+ * This design decouples the worker concurrency logic from the specific
  * behavior applied to each element, making it possible to plug in
  * different actions (e.g., logging, processing, testing) without
  * modifying the Worker itself.
@@ -36,8 +36,8 @@
 
 /* Project libraries */
 
-#include "IWorkerAction.h"
 #include "cola.h"
+#include "i_worker_action.h"
 
 /*****************************************************************************/
 
@@ -60,7 +60,12 @@ class Worker {
     /**
      * @brief Time to wait new values enter into the Cola when it is empty.
      */
-    const std::chrono::seconds wait_timeout{5};
+    static constexpr std::chrono::seconds DEFAULT_WAIT_TIMEOUT{5};
+
+    /**
+     * @brief Default name of the worker used during the construction of it.
+     */
+    static constexpr const char* DEFAULT_WORKER_NAME = "Worker";
 
     /******************************************************************/
 
@@ -73,7 +78,8 @@ class Worker {
      * @param action Reference to the action strategy executed by the worker.
      * @param name Optional worker name for logging/identification.
      */
-    explicit Worker(Cola<T>& cola, IWorkerAction<T>& action, const std::string& name = "Worker");
+    explicit Worker(Cola<T>& cola, IWorkerAction<T>& action,
+                    const std::string& name = DEFAULT_WORKER_NAME);
 
     /**
      * @brief Destruct a Worker object.
