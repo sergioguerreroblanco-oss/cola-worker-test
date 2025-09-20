@@ -2,7 +2,7 @@
 PROJECT_NAME           = "cola-worker-test"
 PROJECT_NUMBER         = 1.0.0
 
-# Input (fuentes en raíz del repo, no en docs/)
+# Input
 INPUT                  = ../include ../src
 RECURSIVE              = YES
 INPUT_ENCODING         = UTF-8
