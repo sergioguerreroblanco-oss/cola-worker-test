@@ -35,5 +35,5 @@ jobs:
         with:
           name: documentation
           path: |
-            html/
-            latex/refman.pdf
+            docs/html/
+            docs/latex/refman.pdf

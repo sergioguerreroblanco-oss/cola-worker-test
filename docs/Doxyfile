@@ -3,12 +3,12 @@ PROJECT_NAME           = "cola-worker-test"
 PROJECT_NUMBER         = 1.0.0
 
 # Input
-INPUT                  = ../include ../src
+INPUT                  = include src
 RECURSIVE              = YES
 INPUT_ENCODING         = UTF-8
 
 # Output
-OUTPUT_DIRECTORY       = .
+OUTPUT_DIRECTORY       = docs
 GENERATE_HTML          = YES
 HTML_OUTPUT            = html
 GENERATE_LATEX         = YES

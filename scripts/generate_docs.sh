@@ -20,13 +20,18 @@ if [ -z "$DOXYGEN_CMD" ]; then
 fi
 
 echo "Generating documentation..."
-cd "$PROJECT_ROOT/docs"
-doxygen Doxyfile
+cd "$PROJECT_ROOT"
+doxygen docs/Doxyfile
 
 # Compile PDF (LaTeX -> PDF)
-if [ -d "latex" ]; then
+if [ -d "docs/latex" ]; then
   echo "Compiling LaTeX to PDF..."
-  make -C latex
+  cd docs/latex
+  pdflatex refman.tex
+  makeindex refman.idx || true
+  pdflatex refman.tex
+  pdflatex refman.tex
+  cd ../..
 fi
 
 echo "Documentation generated in docs/html and docs/latex/refman.pdf"
