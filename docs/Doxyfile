@@ -10,7 +10,7 @@ RECURSIVE              = YES
 INPUT_ENCODING = UTF-8
 
 # Output
-OUTPUT_DIRECTORY       = .
+OUTPUT_DIRECTORY       = docs
 GENERATE_HTML          = YES
 HTML_OUTPUT            = html
 
