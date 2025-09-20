@@ -25,6 +25,10 @@
 
 #include "worker.h"
 
+// Definition required for constexpr static data members of non-integral types
+template <typename T>
+constexpr std::chrono::seconds Worker<T>::DEFAULT_WAIT_TIMEOUT;
+
 /*****************************************************************************/
 
 /* Public Methods */
