@@ -1,18 +1,17 @@
 # Project settings
 PROJECT_NAME           = "cola-worker-test"
 PROJECT_NUMBER         = 1.0.0
-OUTPUT_DIRECTORY       = docs
-GENERATE_LATEX         = YES
 
-# Input
-INPUT = ../include ../src
+# Input (fuentes en raíz del repo, no en docs/)
+INPUT                  = ../include ../src
 RECURSIVE              = YES
-INPUT_ENCODING = UTF-8
+INPUT_ENCODING         = UTF-8
 
 # Output
-OUTPUT_DIRECTORY       = docs
+OUTPUT_DIRECTORY       = .
 GENERATE_HTML          = YES
 HTML_OUTPUT            = html
+GENERATE_LATEX         = YES
 
 # Misc
 QUIET                  = YES
