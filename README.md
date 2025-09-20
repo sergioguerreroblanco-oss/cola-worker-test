@@ -219,12 +219,21 @@ cmake --preset debug
 cmake --build --preset debug
 ctest --preset debug --output-on-failure
 ```
+> Note - Need to have installed: 
+> 1. [CMake](https://github.com/Kitware/CMake/releases/download/v4.1.1/cmake-4.1.1-windows-x86_64.msi)
+> 2. Ninja: 
+>```bash 
+> winget install Ninja-build.Ninja
+>```
 
 ### Running Tests (Linux / Docker)
 
 After building the project, run the following command inside the build directory:
 
-```ctest --output-on-failure```
+```bash
+cd build/debug
+ctest --output-on-failure
+```
 
 This will automatically discover and execute all registered GoogleTest cases.
 

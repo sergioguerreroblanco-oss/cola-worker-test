@@ -51,8 +51,8 @@ void Logger::log(Level lvl, const std::string& msg) {
         return;
     }
 
-    std::cout << "[" << timestamp() << "] "
-              << "[" << levelToString(lvl) << "] " << msg << std::endl;
+    std::cout << "[" << timestamp() << "] " << "[" << levelToString(lvl) << "] " << msg
+              << std::endl;
 }
 
 /*****************************************************************************/

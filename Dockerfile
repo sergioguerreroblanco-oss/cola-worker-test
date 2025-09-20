@@ -16,8 +16,9 @@ WORKDIR /app
 COPY . .
 
 # Compilation out of the tree (build/) in release mode
-RUN cmake -S . -B build -DCMAKE_BUILD_TYPE=Release \
- && cmake --build build -j
+RUN cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=ON \
+ && cmake --build build -j \
+ && ctest --test-dir build --output-on-failure
 
 # Show the tests errors directly in the output
 ENV CTEST_OUTPUT_ON_FAILURE=1
