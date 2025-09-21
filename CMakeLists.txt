@@ -19,6 +19,7 @@ add_library(core STATIC
     src/logger.cpp
 )
 target_include_directories(core PUBLIC include)
+target_include_directories(core PUBLIC third_party/optional-lite/include)
 
 # Configure Compiler Flags
 if(MSVC)

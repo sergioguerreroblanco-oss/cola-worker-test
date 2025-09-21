@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file        worker.h
  * @author      Sergio Guerrero Blanco <sergioguerreroblanco@hotmail.com>
  * @date        <2025-09-15>
@@ -9,8 +9,8 @@
  * @details
  * The Worker class runs in its own thread and repeatedly attempts to
  * extract data from a thread-safe queue (`Cola<T>`). For each retrieved
- * element, or in case of timeout/shutdown, the Worker delegates the
- * handling of events to a user-defined action (via the IWorkerAction<T>
+ * element, or in case of timeout (no data available), the Worker delegates
+ * the handling of events to a user-defined action (via the IWorkerAction<T>
  * interface).
  *
  * This design decouples the worker concurrency logic from the specific
@@ -48,7 +48,7 @@
  *
  * Each Worker runs in its own thread, repeatedly calling `pop()` on the queue
  * and delegating the retrieved data to the associated IWorkerAction.
- * It supports graceful shutdown and explicit stop.
+ * It supports graceful shutdown or immediate stop.
  */
 template <typename T>
 class Worker {
@@ -88,34 +88,34 @@ class Worker {
 
     /**
      * @brief Disable copy constructor.
-     * A Worker cannot be copied because it manages a std::thread,
-     * which is non-copyable. Copying would imply two Workers
-     * owning the same thread, which is undefined.
+     *        A Worker cannot be copied because it manages a std::thread,
+     *        which is non-copyable. Copying would imply two Workers
+     *        owning the same thread, which is undefined.
      */
     Worker(const Worker&) = delete;
 
     /**
      * @brief Disable copy assignment operator.
-     * A Worker cannot be copy-assigned because std::thread
-     * cannot be duplicated or reassigned between different owners.
+     *        A Worker cannot be copy-assigned because std::thread
+     *        cannot be duplicated or reassigned between different owners.
      */
     Worker& operator=(const Worker&) = delete;
 
     /**
      * @brief Disable move constructor.
-     * Although std::thread supports move semantics,
-     * allowing Worker to be movable could transfer the
-     * ownership of an active thread, leaving the source
-     * Worker in an inconsistent state. To enforce strict
-     * ownership, movement is disabled.
+     *        Although std::thread supports move semantics,
+     *        allowing Worker to be movable could transfer the
+     *        ownership of an active thread, leaving the source
+     *        Worker in an inconsistent state. To enforce strict
+     *        ownership, movement is disabled.
      */
     Worker(Worker&&) = delete;
 
     /**
      * @brief Disable move assignment operator.
-     * Move assignment is also disabled for the same reason:
-     * to prevent accidental transfer of thread ownership
-     * between Worker instances.
+     *        Move assignment is also disabled for the same reason:
+     *        to prevent accidental transfer of thread ownership
+     *        between Worker instances.
      */
     Worker& operator=(Worker&&) = delete;
 
@@ -125,7 +125,9 @@ class Worker {
     void start();
 
     /**
-     * @brief Stops the Worker.
+     * @brief Stops the Worker thread.
+     * @param mode Stop behavior: waits for the current `pop()` cycle to finish,
+     *        letting the worker exit naturally at the next iteration.
      */
     void stop();
 

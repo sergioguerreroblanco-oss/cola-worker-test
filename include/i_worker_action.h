@@ -64,12 +64,6 @@ class IWorkerAction {
      * @brief Action executed when the queue is shut down.
      * @param workerName Name of the worker invoking the callback.
      */
-    virtual void colaApagada(const std::string& workerName) = 0;
-
-    /**
-     * @brief Action executed when the queue is shut down.
-     * @param workerName Name of the worker invoking the callback.
-     */
     virtual void onStop(const std::string& workerName) = 0;
 
     /******************************************************************/

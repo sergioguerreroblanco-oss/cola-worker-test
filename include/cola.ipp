@@ -25,26 +25,14 @@
 /* Public Methods */
 
 /**
- * @details Constructor of the Cola receiving the maximum size
- * for the buffer.
+ * @details Constructor of Cola, setting the maximum buffer size.
  */
 template <typename T>
-Cola<T>::Cola(size_t max_size) : max_size(max_size), shutting_down(false) {}
+Cola<T>::Cola(size_t max_size) : max_size(max_size) {}
 
 /**
- * @details Manages to stop using the Cola and notifies all the consumers.
- */
-template <typename T>
-void Cola<T>::shutdown() {
-    std::unique_lock<std::mutex> lock(mtx);
-    shutting_down = true;
-    lock.unlock();
-    cv.notify_all();
-}
-
-/**
- * @details Manages the addition of a new "dato" into the buffer
- * which could mean to delete the eldest "dato" when the buffer is full.
+ * @details Inserts a new element into the buffer.
+ *          If the buffer is full, the oldest element is removed before inserting the new one.
  */
 template <typename T>
 void Cola<T>::push(T dato) {
@@ -52,30 +40,28 @@ void Cola<T>::push(T dato) {
     if (buffer.size() >= max_size) {
         buffer.pop_front();  // Take out the eldest "dato"
     }
-    buffer.push_back(dato);
+    buffer.push_back(std::move(dato));
     cv.notify_one();  // notify the waiting worker
 }
 
 /**
- * @details Manages retrieval of data from the buffer but if the buffer
- * is empty waits for new data until a timeout is triggered.
+ * @details Retrieves the oldest element from the buffer.
+ *          If the buffer is empty, waits up to the specified timeout for new data.
+ * @return An `optional<T>` containing the retrieved element,
+ *         or `nonstd::nullopt` if the timeout expires.
  */
 template <typename T>
-typename Cola<T>::PopResult Cola<T>::pop(T& out, std::chrono::seconds timeout) {
+nonstd::optional<T> Cola<T>::pop(std::chrono::seconds timeout) {
     std::unique_lock<std::mutex> lock(mtx);
 
     // Wait until new data is added or until time is out
-    if (!cv.wait_for(lock, timeout, [this] { return shutting_down || !buffer.empty(); })) {
-        return PopResult::TIMEOUT;
+    if (!cv.wait_for(lock, timeout, [this] { return !buffer.empty(); })) {
+        return nonstd::nullopt;
     }
 
-    if (shutting_down) {
-        return PopResult::SHUTDOWN;
-    }
-
-    out = buffer.front();
+    T out = std::move(buffer.front());
     buffer.pop_front();
-    return PopResult::OK;
+    return out;
 }
 
 /**
@@ -88,7 +74,8 @@ size_t Cola<T>::get_size(void) const {
 }
 
 /**
- * @details Indicates if the buffer is empty or not.
+ * @details Checks whether the buffer is empty.
+ * @return true if empty, false otherwise.
  */
 template <typename T>
 bool Cola<T>::is_empty(void) const {

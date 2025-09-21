@@ -19,7 +19,7 @@
  *    the results with timestamps and severity levels.
  *
  * The application illustrates thread synchronization, dependency
- * injection for worker behavior, and a clean shutdown procedure.
+ * injection for worker behavior, and a clean stop of workers.
  */
 
 /*****************************************************************************/
@@ -70,8 +70,6 @@ int main() {
      */
     production(cola);
 
-    cola.shutdown();
-
     worker1.stop();
     worker2.stop();
     worker3.stop();
@@ -81,6 +79,8 @@ int main() {
 
 /**
  * @brief Producer function that periodically pushes integers into the queue.
+ * Simulates steady production by generating sequential integers
+ * and sleeping between pushes.
  * @param cola Reference to the queue where integers are inserted.
  */
 void production(Cola<int>& cola) {

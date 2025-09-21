@@ -2,26 +2,30 @@
 
 ![CI](https://github.com/sergioguerreroblanco-oss/cola-worker-test/actions/workflows/ci.yml/badge.svg)
 
-Cola & Worker is a C++ project that demonstrates a producer–consumer pattern with a bounded, thread-safe queue and multiple worker threads.
-It has been designed as part of a technical test, but structured in a professional way, including **templates, abstract interfaces, unit tests, logging, Docker support and CI/CD pipelines.**
+Cola & Worker is a C++ project that demonstrates a producer–consumer pattern with a bounded, thread-safe queue and multiple worker threads.  
+It has been designed as part of a technical test, but structured in a professional way, including **templates, abstract interfaces, unit tests, logging, Docker support, CI/CD pipelines, and modern C++ practices such as `optional` for safe return values.**
 
 ---
 
 ## ✨ Core Features
 
+
 - **Thread-safe bounded queue (`Cola<T>`)**  
   - Generic template with configurable maximum size (default: 5).  
   - FIFO with automatic removal of the oldest element when the limit is reached.  
-  - `pop()` supports **configurable timeout** and returns states (`OK`, `TIMEOUT`, `SHUTDOWN`).  
-  - **Graceful shutdown**: consumers wake up and terminate cleanly when the queue is closed.  
+  - `pop()` supports **configurable timeout** and returns a `nonstd::optional<T>`:  
+    - `value()` when an element is available.  
+    - `nullopt` when the queue remains empty during the wait period.  
+  - The queue remains deliberately minimal (“dumb”): it does not implement shutdown logic.  
 
 - **Workers (`Worker<T>`)**  
   - Each worker runs in its own thread and consumes data from the queue concurrently.  
-  - Automatically handles **timeout** and **shutdown** scenarios.  
+  - Automatically handles **timeout** scenarios.  
+  - Supports clean termination when `stop()` is called.  
   - Behavior is delegated through the **abstract interface** `IWorkerAction<T>`.  
 
 - **Extensibility via Interfaces**  
-  - `IWorkerAction<T>` defines key events: `trabajo()`, `colaVacia()`, `colaApagada()`, `onStop()`.  
+  - `IWorkerAction<T>` defines key events: `trabajo()`, `colaVacia()`, and `onStop()`.  
   - Makes it easy to inject different behaviors without modifying the `Worker` class.  
 
 - **Concrete Action Example**  
@@ -35,7 +39,7 @@ It has been designed as part of a technical test, but structured in a profession
 
 ## 🌟 Project Highlights
 
-- **Unit tests** with GoogleTest, validating queue size limits, FIFO behavior, and shutdown handling.  
+- **Unit tests** with GoogleTest, validating queue size limits, FIFO behavior, and timeout handling.  
 - **Centralized logging** (`Logger`) with thread safety and severity levels (DEBUG, INFO, WARN, ERROR).  
 - **Automatic documentation** with Doxygen-ready headers.  
 - **Continuous Integration** with GitHub Actions:
@@ -45,6 +49,7 @@ It has been designed as part of a technical test, but structured in a profession
 - **Cross-platform compatibility**: builds on Windows (MSVC), Linux (g++) and Clang, and inside Docker.  
 - **Strict compiler warnings**: `/W4` on MSVC, `-Wall -Wextra -Wpedantic` on GCC/Clang.  
 - **CMake presets** to simplify builds across environments.  
+- **C++14 compliant**: although `std::optional` is part of C++ 17, this project integrates the [optional-lite](https://github.com/martinmoene/optional-lite) third-party library to provide equivalent functionality while preserving C++ 14 compatibility.  
 
 ---
 
@@ -100,22 +105,20 @@ classDiagram
         -mutex mtx
         -condition_variable cv
         -size_t max_size
-        -bool shutting_down
         +Cola(size_t max_size = 5)
         +void push(T dato)
-        +PopResult pop(T& out, chrono::seconds timeout)
-        +void shutdown()
+        +optional<T> pop(chrono::seconds timeout)
         +size_t get_size() const
         +bool is_empty() const
     }
 
     class Worker~T~ {
         -Cola<T>& cola
+        -IWorkerAction<T>& action
         -string name
         -thread thread
         -atomic<bool> running
-        -IWorkerAction<T>* action
-        +Worker(Cola<T> c, IWorkerAction<T> a, string name="Worker")
+        +Worker(Cola<T>& c, IWorkerAction<T>& a, string name="Worker")
         +void start()
         +void stop()
         -void run()
@@ -123,16 +126,14 @@ classDiagram
 
     class IWorkerAction~T~ {
         <<interface>>
-        +void onWork(T dato)
-        +void onQueueEmpty(string workerName)
-        +void onShutdown(string workerName)
+        +void trabajo(string workerName, T dato)
+        +void colaVacia(string workerName, chrono::seconds timeout)
         +void onStop(string workerName)
     }
 
     class PrintWorkerAction~T~ {
-        +void onWork(T dato)
-        +void onQueueEmpty(string workerName)
-        +void onShutdown(string workerName)
+        +void trabajo(string workerName, T dato)
+        +void colaVacia(string workerName, chrono::seconds timeout)
         +void onStop(string workerName)
     }
 
@@ -140,6 +141,7 @@ classDiagram
         -static mutex mtx
         -static Level minLevel
         +static void set_min_level(Level lvl)
+        +static void debug(const string& msg)
         +static void info(const string& msg)
         +static void warn(const string& msg)
         +static void error(const string& msg)
@@ -150,8 +152,6 @@ classDiagram
     Worker --> IWorkerAction : delegates
     PrintWorkerAction ..|> IWorkerAction
     PrintWorkerAction ..> Logger : logs to
-
-
 ```
 
 ---
@@ -242,18 +242,17 @@ This will automatically discover and execute all registered GoogleTest cases.
 ```
 Test project C:/cola-worker-test/build/debug
     Start 1: ColaTest.KeepMaxBufferSize
-1/6 Test #1: ColaTest.KeepMaxBufferSize .........................................   Passed    0.04 sec
-    Start 2: ColaTest.ShutdownWakesUpImmediately
-2/6 Test #2: ColaTest.ShutdownWakesUpImmediately ................................   Passed    0.12 sec
-    Start 3: ColaTest.PopReturnsTimeout
-3/6 Test #3: ColaTest.PopReturnsTimeout .........................................   Passed    1.01 sec
-    Start 4: MultipleSequences/ColaFifoTest.ExtractsInOrder/{ 10, 20 }
-4/6 Test #4: MultipleSequences/ColaFifoTest.ExtractsInOrder/{ 10, 20 } ..........   Passed    0.01 sec
-    Start 5: MultipleSequences/ColaFifoTest.ExtractsInOrder/{ 1, 2, 3, 4, 5 }
-5/6 Test #5: MultipleSequences/ColaFifoTest.ExtractsInOrder/{ 1, 2, 3, 4, 5 } ...   Passed    0.01 sec
-    Start 6: MultipleSequences/ColaFifoTest.ExtractsInOrder/{ 42 }
-6/6 Test #6: MultipleSequences/ColaFifoTest.ExtractsInOrder/{ 42 } ..............   Passed    0.01 sec
-100% tests passed, 0 tests failed out of 6
+1/5 Test #1: ColaTest.KeepMaxBufferSize .........................................   Passed    0.01 sec
+    Start 2: ColaTest.PopReturnsTimeout
+2/5 Test #2: ColaTest.PopReturnsTimeout .........................................   Passed    1.01 sec
+    Start 3: MultipleSequences/ColaFifoTest.ExtractsInOrder/{ 10, 20 }
+3/5 Test #3: MultipleSequences/ColaFifoTest.ExtractsInOrder/{ 10, 20 } ..........   Passed    0.01 sec
+    Start 4: MultipleSequences/ColaFifoTest.ExtractsInOrder/{ 1, 2, 3, 4, 5 }
+4/5 Test #4: MultipleSequences/ColaFifoTest.ExtractsInOrder/{ 1, 2, 3, 4, 5 } ...   Passed    0.01 sec
+    Start 5: MultipleSequences/ColaFifoTest.ExtractsInOrder/{ 42 }
+5/5 Test #5: MultipleSequences/ColaFifoTest.ExtractsInOrder/{ 42 } ..............   Passed    0.01 sec
+100% tests passed, 0 tests failed out of 5
+Total Test time (real) =   1.05 sec
 ```
 
 ---
@@ -326,6 +325,8 @@ cola-worker-test/
 │   └── README.md              # Docs instructions
 │
 ├── include/                   # Public headers and templates
+│   ├── third_party/           # External headers (C++14 backports)
+│   │   └── optional.hpp       # optional<T> for C++14 (optional-lite)
 │   ├── cola.h
 │   ├── cola.ipp
 │   ├── i_worker_action.h
@@ -442,12 +443,19 @@ clang-format -i include/*.h include/*.ipp src/*.cpp tests/*.cpp
 ## 📌 Notes
 
 - C++ Standard: C++14 (set(CMAKE_CXX_STANDARD 14)).
+  - Since `std::optional` is only available from C++ 17, this project integrates the lightweight **optional-lite** library (`third_party/optional.hpp`) to preserve the same semantics in C++ 14.
 - Thread Safety: Managed with std::mutex, std::condition_variable, and std::atomic.
 - Extensibility: Worker actions decoupled via `IWorkerAction` interface 
   → new behaviors can be added without modifying worker logic.
 - Logging: Centralized Logger utility with severity levels.
 - Cross-Platform: Builds on Windows (MSVC), Linux (g++) and Docker.
 - Queue implementation: `Cola<T>` uses `std::deque` internally rather than a custom array-based buffer. This choice favors **simplicity, correctness, and STL optimizations**, while still enforcing the bounded size (default: 5 elements). A custom queue could have been implemented, but `std::deque` provides robust, well-tested behavior with minimal overhead.
+- **Design decision on shutdown handling**:  
+  - Originally, the queue (`Cola<T>`) exposed a `shutdown()` method and returned explicit states (`OK`, `TIMEOUT`, `SHUTDOWN`).  
+  - This was removed to keep the queue a **pure, passive data structure** without any knowledge of program flow or lifecycle.  
+  - Workers (`Worker<T>`) were considered for graceful/immediate shutdown semantics, but they rely on a blocking `pop()` with a fixed timeout (5s, as required).  
+  - Allowing workers to interrupt `pop()` would require making the queue “smarter” (e.g., introducing sentinel values or cancellation flags), which would break the intended design philosophy.  
+  - Therefore, workers stop naturally after the next timeout cycle, and this behavior was **documented explicitly** rather than forcing extra complexity into the queue or worker.
 
 ---
 

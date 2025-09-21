@@ -57,7 +57,7 @@ class PrintWorkerAction : public IWorkerAction<T> {
    public:
     /**
      * @details Prints a message indicating that the "dato" was successfully
-     * retrieved from the buffer and shows the "dato".
+     *          retrieved from the buffer and shows the "dato".
      */
     void trabajo(const std::string& workerName, const T& dato) override {
         Logger::info("[" + workerName + "] Data processed: " + std::to_string(dato));
@@ -65,19 +65,12 @@ class PrintWorkerAction : public IWorkerAction<T> {
 
     /**
      * @details Prints a message indicating that the timeout retrieving
-     * the "dato" from the buffer has passed and currently it is empty.
+     *          the "dato" from the buffer has passed and currently it is empty.
      */
     void colaVacia(const std::string& workerName,
                    const std::chrono::seconds waitting_time) override {
         Logger::warn("[" + workerName + "] Cola empty after timeout of " +
                      std::to_string(waitting_time.count()) + "s");
-    }
-
-    /**
-     * @details Prints a message indicating that the Cola was shut down.
-     */
-    void colaApagada(const std::string& workerName) override {
-        Logger::error("[" + workerName + "] Cola was shut down");
     }
 
     /**

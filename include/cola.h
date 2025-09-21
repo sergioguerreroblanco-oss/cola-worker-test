@@ -11,8 +11,7 @@
  * - Implements the producer-consumer pattern with synchronization
  *   using a mutex and condition variable.
  * - When the queue reaches its maximum size, the oldest element is discarded.
- * - Provides timeout-based retrieval (`pop`) and a shutdown mechanism
- *   to gracefully stop consumers.
+ * - Provides timeout-based retrieval (`pop`) using `nonstd::optional`.
  *
  * The class is safe for concurrent use by multiple producer and consumer threads.
  */
@@ -31,6 +30,10 @@
 #include <deque>
 #include <mutex>
 
+/* Third party libraries */
+
+#include "third_party/optional.hpp"
+
 /*****************************************************************************/
 
 /**
@@ -44,17 +47,6 @@
  */
 template <typename T>
 class Cola {
-    /******************************************************************/
-
-    /* Public Data Types */
-
-   public:
-    /**
-     * @brief Description of the different scenarios when
-     * popping values from the buffer.
-     */
-    enum class PopResult { OK, TIMEOUT, SHUTDOWN };
-
     /******************************************************************/
 
     /* Public Methods */
@@ -73,56 +65,55 @@ class Cola {
 
     /**
      * @brief Disable copy constructor.
-     * Cola cannot be copied because it manages synchronization primitives
-     * (std::mutex, std::condition_variable), which are non-copyable.
+     *        Cola cannot be copied because it manages synchronization primitives
+     *        (std::mutex, std::condition_variable), which are non-copyable.
      */
     Cola(const Cola&) = delete;
 
     /**
      * @brief Disable copy assignment operator.
-     * Cola cannot be copy-assigned for the same reason:
-     * synchronization primitives cannot be duplicated safely.
+     *        Cola cannot be copy-assigned for the same reason:
+     *        synchronization primitives cannot be duplicated safely.
      */
     Cola& operator=(const Cola&) = delete;
 
     /**
      * @brief Disable move constructor.
-     * Although std::mutex and std::condition_variable technically
-     * have move operations deleted, even if they were movable,
-     * transferring them between Cola instances would break
-     * synchronization guarantees. To enforce strict ownership,
-     * movement is disabled.
+     *        Although std::mutex and std::condition_variable technically
+     *        have move operations deleted, even if they were movable,
+     *        transferring them between Cola instances would break
+     *        synchronization guarantees. To enforce strict ownership,
+     *        movement is disabled.
      */
     Cola(Cola&&) = delete;
 
     /**
      * @brief Disable move assignment operator.
-     * Move assignment is also disabled to avoid transferring
-     * synchronization primitives between instances, which could
-     * lead to undefined behavior.
+     *        Move assignment is also disabled to avoid transferring
+     *        synchronization primitives between instances, which could
+     *        lead to undefined behavior.
      */
     Cola& operator=(Cola&&) = delete;
 
     /**
-     * @brief Manages to stop using the Cola and notifies all the consumers.
-     */
-    void shutdown();
-
-    /**
-     * @brief Push the data into the buffer.
-     * @param dato Data to introduce in the buffer.
+     * @brief Push a new element into the buffer.
+     *        If the buffer is full, the oldest element is discarded.
+     * @param dato Data to insert in the buffer.
      */
     void push(T dato);
 
     /**
-     * @brief Removes the oldest element from the buffer.
-     * @param out Data retrieved from the buffer.
-     * @param timeout Time given to retrieve data from the buffer.
-     * @return OK Value succesfully retrieved from the buffer.
-     * @return TIMEOUT The buffer is empty and triggered a timeout.
-     * @return SHUTDOWN The buffer is stopped.
+     * @brief Removes the oldest element from the buffer, waiting up to a timeout.
+     * @param timeout Maximum time to wait for data.
+     * @return An `optional<T>` containing the retrieved value if available.
+     *         Returns `nonstd::nullopt` if the timeout expires without data.
+     * @note The queue does not support immediate shutdown.
+     *       If a Worker calls stop() while blocked on pop(),
+     *       the call will only return after the timeout expires.
+     *       This design keeps the queue "dumb" (responsible only
+     *       for synchronization and storage, without shutdown logic).
      */
-    PopResult pop(T& out, std::chrono::seconds timeout);
+    nonstd::optional<T> pop(std::chrono::seconds timeout);
 
     /**
      * @brief Getter of the buffer size.
@@ -161,11 +152,6 @@ class Cola {
      * @brief Maximum size of the buffer.
      */
     size_t max_size;
-
-    /**
-     * @brief Indicates if the Cola was stopped.
-     */
-    bool shutting_down;
 
     /******************************************************************/
 };
